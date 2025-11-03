@@ -52,10 +52,10 @@ def main():
     project = Project(data.project_url, data.project_dir, data.patch_dataset_dir)
     revised_patch, _ = revise_patch(patch, project.dir)
     project.all_hunks_applied_succeeded = True
-    validate_ret = project._validate(data.target_release, revised_patch)
+    project._validate(data.target_release, revised_patch)
     if project.poc_succeeded:
         logger.info(
-            f"Successfully backport patch to target release {data.target_release}"
+            f"Patch successfully passes validation on target release {data.target_release}"
         )
 
 

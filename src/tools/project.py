@@ -140,7 +140,7 @@ class Project:
         logger.debug(patch)
         logger.debug("revised_patch")
         logger.debug(revised_patch)
-        logger.info(f"Applying patch {f.name}")
+        logger.debug(f"Applying patch {f.name}")
         try:
             self.repo.git.apply([f.name], v=True)
             ret = "Patch applied successfully"
@@ -194,9 +194,9 @@ class Project:
             f.write(complete_patch)
         try:
             self.repo.git.apply([f.name], v=True)
-            logger.info(f"The joined patch could {f.name} be applied successfully")
+            logger.debug(f"The joined patch could {f.name} be applied successfully")
         except Exception as e:
-            logger.info(f"Failed to apply Complete patch {f.name}")
+            logger.debug(f"Failed to apply Complete patch {f.name}")
             # TODO: give feedback to LLM about which line can not be applied
             apply_result = ""
             ret += f"The joined patch could not be applied successfully, please try to revise the patch with provided tools and the following error message during applying the patch: {apply_result}\n"
@@ -204,9 +204,9 @@ class Project:
             return ret
 
         # compile the patch
-        logger.info(f"Start compile the patched source code")
+        logger.debug(f"Start compile the patched source code")
         if not os.path.exists(os.path.join(self.dir, "build.sh")):
-            logger.info("No build.sh file found.")
+            logger.debug("No build.sh file found.")
             exit(1)
 
         build_process = subprocess.Popen(
@@ -225,7 +225,7 @@ class Project:
             return ret
 
         if build_process.returncode != 0:
-            logger.info(f"Compilation failed\n{compile_result}\n")
+            logger.debug(f"Compilation failed\n{compile_result}\n")
             ret += "The source code could not be COMPILED successfully after applying the patch. "
             ret += "Next I'll give you the error message during compiling, and you should modify the error patch. "
             ret += f"Here is the error message:\n{compile_result}\n"
@@ -234,7 +234,7 @@ class Project:
             ret += "Please DO NOT send the same patch to me, repeated patches will harm the lives of others.\n"
             self.repo.git.reset("--hard")
         else:
-            logger.info(f"Compilation succeeded")
+            logger.debug(f"Compilation succeeded")
             ret += "The patched source code could be COMPILED successfully! I really thank you for your great efforts.\n"
             self.compile_succeeded = True
         return ret
@@ -247,10 +247,10 @@ class Project:
             str: A message indicating the result of the testcase process.
         """
         ret = ""
-        logger.info(f"Run testcase after compile")
+        logger.debug(f"Run testcase after compile")
 
         if not os.path.exists(os.path.join(self.dir, "test.sh")):
-            logger.info("No test.sh file found, considered as test passed.")
+            logger.debug("No test.sh file found, considered as test passed.")
             self.testcase_succeeded = True
             ret += "The patched source code could pass TESTCASE! I really thank you for your great efforts.\n"
             return ret
@@ -271,7 +271,7 @@ class Project:
             return ret
 
         if testcase_process.returncode != 0:
-            logger.info(f"Testcase failed\n{testcase_result}")
+            logger.debug(f"Testcase failed\n{testcase_result}")
             ret = "The patched program could not pass the testcase. "
             ret += "Next I'll give you the error message during running the testcase, and you should modify the previous error patch according to this section. "
             ret += f"Here is the error message:\n{testcase_result}\n"
@@ -281,7 +281,7 @@ class Project:
             self.compile_succeeded = False
             self.repo.git.reset("--hard")
         else:
-            logger.info(f"Testcase succeeded")
+            logger.debug(f"Testcase succeeded")
             ret += "The patched source code could pass TESTCASE! I really thank you for your great efforts.\n"
             self.testcase_succeeded = True
         return ret
@@ -294,10 +294,10 @@ class Project:
             str: A message indicating the result of the PoC process.
         """
         ret = ""
-        logger.info(f"Run PoC after compile and run testcase")
+        logger.debug(f"Run PoC after compile and run testcase")
 
         if not os.path.exists(os.path.join(self.dir, "poc.sh")):
-            logger.info("No poc.sh file found, considered as PoC passed.")
+            logger.debug("No poc.sh file found, considered as PoC passed.")
             self.poc_succeeded = True
             ret += "Existing PoC could NOT TRIGGER the bug, which means your patch successfully fix the bug! I really thank you for your great efforts.\n"
             return ret
@@ -319,8 +319,8 @@ class Project:
             return ret
 
         if self.err_msg in poc_result:
-            logger.info(f"PoC test FAIL, returncode = {poc_process.returncode}")
-            logger.info(f"stderr: {poc_result}")
+            logger.debug(f"PoC test FAIL, returncode = {poc_process.returncode}")
+            logger.debug(f"stderr: {poc_result}")
             ret += "Existing PoC could still trigger the bug, which means your patch fail to fix the bug. "
             ret += "Next I'll give you the error message during running the PoC, and you should modify the previous error patch according to this section. "
             ret += f"Here is the error message:\n{poc_result}\n"
@@ -331,7 +331,7 @@ class Project:
             self.testcase_succeeded = False
             self.repo.git.reset("--hard")
         else:
-            logger.info(f"PoC test PASS, returncode = {poc_process.returncode}")
+            logger.debug(f"PoC test PASS, returncode = {poc_process.returncode}")
             ret += "Existing PoC could NOT TRIGGER the bug, which means your patch successfully fix the bug! I really thank you for your great efforts.\n"
             self.poc_succeeded = True
         return ret

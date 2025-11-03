@@ -51,11 +51,11 @@ def do_backport(agent_executor, project, data):
         project.round_succeeded = False
         ret = project._apply_hunk(data.target_release, pp)
         if project.round_succeeded:
-            logger.info(f"Hunk {idx} can be applied without any conflicts")
+            logger.debug(f"Hunk {idx} can be applied without any conflicts")
             continue
         else:
             similar_block = re.findall(r"section.\n(.*?)\nPlease", ret, re.DOTALL)[0]
-            logger.info(f"Hunk {idx} can not be applied, using LLM to generate a fix")
+            logger.debug(f"Hunk {idx} can not be applied, using LLM to generate a fix")
             agent_executor.invoke(
                 {
                     "project_url": data.project_url,
@@ -67,26 +67,23 @@ def do_backport(agent_executor, project, data):
                 {"callbacks": [log_handler]},
             )
             if not project.round_succeeded:
-                logger.error(
+                logger.debug(
                     f"Failed to backport the hunk {idx} \n----------------------------------\n{pp}\n----------------------------------\n"
                 )
                 logger.error(f"Abort")
                 exit(1)
 
     project.all_hunks_applied_succeeded = True
-    logger.info(
+    logger.debug(
         "Successfully apply all hunks, try to join all hunks into one patch and test"
     )
     complete_patch = "\n".join(project.succeeded_patches)
-    # create symbolic link for each patch dataset file
+
     for file in os.listdir(data.patch_dataset_dir):
         if os.path.exists(f"{data.project_dir}{file}"):
             os.remove(f"{data.project_dir}{file}")
         os.symlink(f"{data.patch_dataset_dir}{file}", f"{data.project_dir}{file}")
 
-    # project.compile_succeeded = True
-    # project.testcase_succeeded = True
-    # project.poc_succeeded = True
     validate_ret = project._validate(data.target_release, complete_patch)
     if project.poc_succeeded:
         logger.info(
@@ -117,7 +114,7 @@ def do_backport(agent_executor, project, data):
         {"callbacks": [log_handler]},
     )
     if not project.compile_succeeded:
-        logger.error(f"Failed to complie the patch\n")
+        logger.debug(f"Failed to complie the patch")
         logger.error(f"Abort")
         exit(1)
     else:
