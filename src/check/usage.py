@@ -10,6 +10,7 @@ https://community.openai.com/t/character-limit-response-for-the-gpt-3-5-api/4267
 import datetime
 
 import requests
+from rich import print
 
 price = {
     "gpt-4-turbo": (0.01, 0.03),
@@ -62,3 +63,15 @@ def get_usage(api_key):
     }
 
     return result
+
+
+if __name__ == "__main__":
+    import os
+
+    usage = get_usage(os.getenv("OPENAI_API_KEY"))
+    print(f"\nCurrent time: {usage['current_time']}")
+    print(f"Total cost: ${usage['total_cost']:.2f}")
+    print(
+        f"Total consume input: {usage['total_consume_input']/1000}(k), output: {usage['total_consume_output']/1000}(k)"
+    )
+    print(f"Total consume tokens: {usage['total_consume_tokens']/1000}(k)\n")

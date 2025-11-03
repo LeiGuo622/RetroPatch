@@ -79,6 +79,8 @@ def main():
 
     if debug_mode:
         logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
     data = load_yml(config_file)
 

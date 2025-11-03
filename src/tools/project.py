@@ -148,7 +148,7 @@ class Project:
             self.succeeded_patches.append(revised_patch)
             self.round_succeeded = True
         except Exception as e:
-            ret = f"Patch failed to apply with error, context mismatch.\n"
+            ret = "Patch failed to apply with error, context mismatch.\n"
             ret += "This patch does not apply, you CAN NOT send it to me again. Repeated patches will harm the lives of others.\n"
             ret += "Next I'll give you the context of the previous error patch in the old version, and you should modify the previous error patch according to this section.\n"
             path = re.findall(r"--- a/(.*)", revised_patch)[0]
@@ -204,7 +204,7 @@ class Project:
             return ret
 
         # compile the patch
-        logger.debug(f"Start compile the patched source code")
+        logger.debug("Start compile the patched source code")
         if not os.path.exists(os.path.join(self.dir, "build.sh")):
             logger.debug("No build.sh file found.")
             exit(1)
@@ -234,7 +234,7 @@ class Project:
             ret += "Please DO NOT send the same patch to me, repeated patches will harm the lives of others.\n"
             self.repo.git.reset("--hard")
         else:
-            logger.debug(f"Compilation succeeded")
+            logger.debug("Compilation succeeded")
             ret += "The patched source code could be COMPILED successfully! I really thank you for your great efforts.\n"
             self.compile_succeeded = True
         return ret
@@ -247,7 +247,7 @@ class Project:
             str: A message indicating the result of the testcase process.
         """
         ret = ""
-        logger.debug(f"Run testcase after compile")
+        logger.debug("Run testcase after compile")
 
         if not os.path.exists(os.path.join(self.dir, "test.sh")):
             logger.debug("No test.sh file found, considered as test passed.")
@@ -267,7 +267,7 @@ class Project:
             testcase_result = stderr.decode("utf-8")
         except subprocess.TimeoutExpired:
             testcase_process.kill()
-            ret += f"The TESTCASE process of the patched source code is timeout. "
+            ret += "The TESTCASE process of the patched source code is timeout. "
             return ret
 
         if testcase_process.returncode != 0:
@@ -281,7 +281,7 @@ class Project:
             self.compile_succeeded = False
             self.repo.git.reset("--hard")
         else:
-            logger.debug(f"Testcase succeeded")
+            logger.debug("Testcase succeeded")
             ret += "The patched source code could pass TESTCASE! I really thank you for your great efforts.\n"
             self.testcase_succeeded = True
         return ret
@@ -294,7 +294,7 @@ class Project:
             str: A message indicating the result of the PoC process.
         """
         ret = ""
-        logger.debug(f"Run PoC after compile and run testcase")
+        logger.debug("Run PoC after compile and run testcase")
 
         if not os.path.exists(os.path.join(self.dir, "poc.sh")):
             logger.debug("No poc.sh file found, considered as PoC passed.")
@@ -315,7 +315,7 @@ class Project:
             poc_result = stderr.decode("utf-8")
         except subprocess.TimeoutExpired:
             poc_process.kill()
-            ret += f"The TESTCASE process of the patched source code is timeout. "
+            ret += "The TESTCASE process of the patched source code is timeout. "
             return ret
 
         if self.err_msg in poc_result:

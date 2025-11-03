@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import sys
 
@@ -23,11 +24,17 @@ def main():
     parser.add_argument(
         "-c", "--config", type=str, required=True, help="CVE config yml"
     )
-    parser.add_argument("-d", "--debug", action="store_true", help="enable debug mode")
+    parser.add_argument(
+        "-d", "--debug", action="store_true", default=True, help="enable debug mode"
+    )
 
     args = parser.parse_args()
     debug_mode = args.debug
     config_file = args.config
+    if debug_mode:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
     data = load_yml(config_file)
 
