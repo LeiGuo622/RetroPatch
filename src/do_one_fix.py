@@ -108,10 +108,10 @@ def main():
     before_usage = get_usage(data.openai_key)
     do_backport(agent_executor, project, data)
     after_usage = get_usage(data.openai_key)
-    logger.info(
+    logger.debug(
         f"This patch total cost: ${(after_usage['total_cost'] - before_usage['total_cost']):.2f}"
     )
-    logger.info(
+    logger.debug(
         f"This patch total consume tokens: {(after_usage['total_consume_tokens'] - before_usage['total_consume_tokens'])/1000}(k)"
     )
 

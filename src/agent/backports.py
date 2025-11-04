@@ -74,7 +74,7 @@ def do_backport(agent_executor, project, data):
                 exit(1)
 
     project.all_hunks_applied_succeeded = True
-    logger.debug(
+    logger.info(
         "Successfully apply all hunks, try to join all hunks into one patch and test"
     )
     complete_patch = "\n".join(project.succeeded_patches)
@@ -90,7 +90,7 @@ def do_backport(agent_executor, project, data):
             f"Successfully backport patch to target release {data.target_release}"
         )
         for patch in project.succeeded_patches:
-            print(patch)
+            logger.info(patch)
     return
     prompt = ChatPromptTemplate.from_messages(
         [

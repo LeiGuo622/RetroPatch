@@ -196,7 +196,7 @@ def revise_patch(patch: str, project_path: str) -> tuple[str, bool]:
     except Exception as e:
         logger.debug("Failed to revise patch")
         logger.debug(e)
-        print("".join(traceback.TracebackException.from_exception(e).format()))
+        logger.warning("".join(traceback.TracebackException.from_exception(e).format()))
         return patch, False
 
 
@@ -268,5 +268,5 @@ def split_patch(patch):
     except Exception as e:
         logger.debug("Failed to split patch")
         logger.debug(e)
-        print("".join(traceback.TracebackException.from_exception(e).format()))
+        logger.warning("".join(traceback.TracebackException.from_exception(e).format()))
         return None
