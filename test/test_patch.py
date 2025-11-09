@@ -7,7 +7,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src_dir_path = os.path.join(parent_dir, "src")
 sys.path.append(src_dir_path)
 
-from do_one_fix import load_yml
+from backporting import load_yml
 from tools.logger import logger
 from tools.project import Project
 from tools.utils import revise_patch
@@ -56,6 +56,10 @@ def main():
         )
         exit(1)
 
+    for file in os.listdir(data.patch_dataset_dir):
+        if os.path.exists(f"{data.project_dir}{file}"):
+            os.remove(f"{data.project_dir}{file}")
+        os.symlink(f"{data.patch_dataset_dir}{file}", f"{data.project_dir}{file}")
     project = Project(data.project_url, data.project_dir, data.patch_dataset_dir)
     revised_patch, _ = revise_patch(patch, project.dir)
     project.all_hunks_applied_succeeded = True
@@ -63,6 +67,10 @@ def main():
     if project.poc_succeeded:
         logger.info(
             f"Patch successfully passes validation on target release {data.target_release}"
+        )
+    else:
+        logger.error(
+            f"Patch failed to pass validation on target release {data.target_release}"
         )
 
 
