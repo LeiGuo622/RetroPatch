@@ -53,9 +53,8 @@ def load_yml(file_path: str):
         )
         exit(1)
 
-    data.sanitizer = config.get("sanitizer", "")
     data.error_message = config.get("error_massage", "")
-    if not data.sanitizer or not data.error_message:
+    if not data.error_message:
         logger.warning(
             "Dataset without error info which means that this vulnerability may not have PoC\n"
         )
