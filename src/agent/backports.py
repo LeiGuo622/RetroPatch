@@ -74,9 +74,7 @@ def do_backport(agent_executor, project, data):
                 exit(1)
 
     project.all_hunks_applied_succeeded = True
-    logger.info(
-        "Successfully apply all hunks, try to join all hunks into one patch and test"
-    )
+    logger.info(f"Aplly all hunks in the patch      PASS")
     complete_patch = "\n".join(project.succeeded_patches)
 
     for file in os.listdir(data.patch_dataset_dir):
@@ -87,7 +85,7 @@ def do_backport(agent_executor, project, data):
     validate_ret = project._validate(data.target_release, complete_patch)
     if project.poc_succeeded:
         logger.info(
-            f"Successfully backport patch to target release {data.target_release}"
+            f"Successfully backport the patch to the target release {data.target_release}"
         )
         for patch in project.succeeded_patches:
             logger.info(patch)

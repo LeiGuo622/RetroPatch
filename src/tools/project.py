@@ -234,7 +234,7 @@ class Project:
             ret += "Please DO NOT send the same patch to me, repeated patches will harm the lives of others.\n"
             self.repo.git.reset("--hard")
         else:
-            logger.info(f"Compilation succeeded")
+            logger.info(f"Compilation                       PASS")
             ret += "The patched source code could be COMPILED successfully! I really thank you for your great efforts.\n"
             self.compile_succeeded = True
         return ret
@@ -281,7 +281,7 @@ class Project:
             self.compile_succeeded = False
             self.repo.git.reset("--hard")
         else:
-            logger.info(f"Testsuite PASS")
+            logger.info(f"Testsuite                         PASS")
             ret += "The patched source code could pass TESTCASE! I really thank you for your great efforts.\n"
             self.testcase_succeeded = True
         return ret
@@ -331,7 +331,7 @@ class Project:
             self.testcase_succeeded = False
             self.repo.git.reset("--hard")
         else:
-            logger.info(f"PoC test PASS")
+            logger.info(f"PoC test                          PASS")
             ret += "Existing PoC could NOT TRIGGER the bug, which means your patch successfully fix the bug! I really thank you for your great efforts.\n"
             self.poc_succeeded = True
         return ret
