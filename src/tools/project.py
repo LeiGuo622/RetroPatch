@@ -48,18 +48,19 @@ class Project:
         )
         ctags.check_returncode()
         self.symbol_map = {}
-        with open(os.path.join(self.dir, "tags"), "r") as f:
-            for line in f:
-                if line.startswith("!_TAG_"):
-                    continue
-                try:
-                    symbol, file, line = line.strip().split(';"')[0].split("\t")
-                    line = int(line)
-                    if symbol not in self.symbol_map:
-                        self.symbol_map[symbol] = []
-                    self.symbol_map[symbol].append((file, line))
-                except:
-                    logger.warning("Error parsing line:", line)
+        with open(os.path.join(self.dir, "tags"), "rb") as f:
+            for line in f.readlines():
+                if text := line.decode("utf-8", errors="ignore"):
+                    if text.startswith("!_TAG_"):
+                        continue
+                    try:
+                        symbol, file, line = line.strip().split(';"')[0].split("\t")
+                        line = int(line)
+                        if symbol not in self.symbol_map:
+                            self.symbol_map[symbol] = []
+                        self.symbol_map[symbol].append((file, line))
+                    except:
+                        continue
 
     def _viewcode(self, ref: str, path: str, startline: int, endline: int) -> str:
         """
