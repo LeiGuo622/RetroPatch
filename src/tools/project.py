@@ -226,7 +226,8 @@ class Project:
             return ret
 
         if build_process.returncode != 0:
-            logger.debug(f"Compilation failed\n{compile_result}\n")
+            logger.info(f"Compilation                       FAILED")
+            logger.debug(f"{compile_result}")
             ret += "The source code could not be COMPILED successfully after applying the patch. "
             ret += "Next I'll give you the error message during compiling, and you should modify the error patch. "
             ret += f"Here is the error message:\n{compile_result}\n"
@@ -272,7 +273,8 @@ class Project:
             return ret
 
         if testcase_process.returncode != 0:
-            logger.debug(f"Testcase failed\n{testcase_result}")
+            logger.info(f"Testsuite                         FAILED")
+            logger.debug(f"{testcase_result}")
             ret = "The patched program could not pass the testcase. "
             ret += "Next I'll give you the error message during running the testcase, and you should modify the previous error patch according to this section. "
             ret += f"Here is the error message:\n{testcase_result}\n"
@@ -320,7 +322,8 @@ class Project:
             return ret
 
         if self.err_msg in poc_result:
-            logger.debug(f"PoC test FAIL, returncode = {poc_process.returncode}")
+            logger.info(f"PoC test                          FAILED")
+            logger.debug(f"returncode = {poc_process.returncode}")
             logger.debug(f"stderr: {poc_result}")
             ret += "Existing PoC could still trigger the bug, which means your patch fail to fix the bug. "
             ret += "Next I'll give you the error message during running the PoC, and you should modify the previous error patch according to this section. "
