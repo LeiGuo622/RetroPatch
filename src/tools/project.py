@@ -54,11 +54,11 @@ class Project:
                     if text.startswith("!_TAG_"):
                         continue
                     try:
-                        symbol, file, line = line.strip().split(';"')[0].split("\t")
-                        line = int(line)
+                        symbol, file, lineno = text.strip().split(';"')[0].split("\t")
+                        lineno = int(lineno)
                         if symbol not in self.symbol_map:
                             self.symbol_map[symbol] = []
-                        self.symbol_map[symbol].append((file, line))
+                        self.symbol_map[symbol].append((file, lineno))
                     except:
                         continue
 
