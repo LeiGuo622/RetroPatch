@@ -267,7 +267,7 @@ class Project:
         )
         try:
             stdout, stderr = build_process.communicate(timeout=60 * 60)
-            compile_result = stdout.decode("utf-8")
+            compile_result = stderr.decode("utf-8")
         except subprocess.TimeoutExpired:
             build_process.kill()
             ret += f"The compilation process of the patched source code is timeout. "
