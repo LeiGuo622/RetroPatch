@@ -102,9 +102,16 @@ def main():
         exit(1)
 
     project = Project(data.project_url, data.project_dir, data.error_message)
-    agent_executor, llm = initial_agent(project, data.openai_key, debug_mode)
+    if (
+        not project._checkout(data.new_patch)
+        or not project._checkout(data.target_release)
+        or not project._checkout(data.new_patch_parent)
+    ):
+        logger.error("Please check given commit id.")
+        exit(1)
 
     before_usage = get_usage(data.openai_key)
+    agent_executor, llm = initial_agent(project, data.openai_key, debug_mode)
     do_backport(agent_executor, project, data, llm)
     after_usage = get_usage(data.openai_key)
     logger.debug(

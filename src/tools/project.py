@@ -23,8 +23,13 @@ class Project:
         self.testcase_succeeded = False
         self.poc_succeeded = False
 
-    def _checkout(self, ref: str):
-        self.repo.git.checkout(ref)
+    def _checkout(self, ref: str) -> bool:
+        self.repo.git.reset("--hard")
+        try:
+            self.repo.git.checkout(ref)
+            return True
+        except:
+            return False
 
     def _get_patch(self, ref: str) -> str:
         try:
@@ -88,7 +93,7 @@ class Project:
             ret.append(lines[i])
         return "\n".join(ret)
 
-    def _locate_symbol(self, ref: str, symbol: str) -> str:
+    def _locate_symbol(self, ref: str, symbol: str) -> str | None:
         """
         Locate a symbol in a specific ref of the target repository.
 
@@ -99,12 +104,7 @@ class Project:
         Returns:
             str: The location of the symbol in the specified ref, or None if the symbol is not found.
         """
-        try:
-            self._checkout(ref)
-        except:
-            ret = f"Oops, it looks like you give a error commit id.\n"
-            ret += "Please check commit id and retry to check the patch.\n"
-            return ret
+        self._checkout(ref)
         self._prepare()
         if symbol in self.symbol_map:
             return self.symbol_map[symbol]
@@ -169,13 +169,7 @@ class Project:
             Exception: If the patch fails to apply.
 
         """
-        try:
-            self.repo.git.reset("--hard")
-            self._checkout(ref)
-        except:
-            ret = f"Oops, it looks like you give a error commit id.\n"
-            ret += "Please check commit id and retry to check the patch.\n"
-            return ret
+        self._checkout(ref)
         self.repo.git.reset("--hard")
         revised_patch, fixed = utils.revise_patch(patch, self.dir)
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
@@ -219,14 +213,8 @@ class Project:
             subprocess.TimeoutExpired: If the compilation process times out.
 
         """
-        try:
-            self.repo.git.reset("--hard")
-            self._checkout(ref)
-        except:
-            ret = f"Oops, it looks like you give a error commit id.\n"
-            ret += "Please check commit id and retry to check the patch.\n"
-            return ret
         # apply joined patch
+        self._checkout(ref)
         ret = ""
         pps = utils.split_patch(complete_patch, False)
         for idx, pp in enumerate(pps):
@@ -252,6 +240,7 @@ class Project:
                 ret += f"Based on the above feedback, MUST you please modify only hunk {idx} in the patch and leave the other hunks untouched so that the context present in hunk {idx} is exactly the same as the source code to guarantee that git apply can be executed normally.\n"
                 self.repo.git.reset("--hard")
                 return ret
+
         # compile the patch
         logger.debug("Start compile the patched source code")
         if not os.path.exists(os.path.join(self.dir, "build.sh")):
@@ -271,6 +260,7 @@ class Project:
         except subprocess.TimeoutExpired:
             build_process.kill()
             ret += f"The compilation process of the patched source code is timeout. "
+            self.repo.git.reset("--hard")
             return ret
 
         if build_process.returncode != 0:
@@ -282,11 +272,11 @@ class Project:
             ret += "Please revise the patch with above error message. "
             ret += "Or use tools `locate_symbol` and `viewcode` to re-check patch-related code snippet. "
             ret += "Please DO NOT send the same patch to me, repeated patches will harm the lives of others.\n"
-            self.repo.git.reset("--hard")
         else:
             logger.info(f"Compilation                       PASS")
             ret += "The patched source code could be COMPILED successfully! I really thank you for your great efforts.\n"
             self.compile_succeeded = True
+        self.repo.git.reset("--hard")
         return ret
 
     def _run_testcase(self) -> str:
@@ -330,7 +320,6 @@ class Project:
             ret += "Or use tools `locate_symbol` and `viewcode` to re-check patch-related code snippet. "
             ret += "Please DO NOT send the same patch to me, repeated patches will harm the lives of others.\n"
             self.compile_succeeded = False
-            self.repo.git.reset("--hard")
         else:
             logger.info(f"Testsuite                         PASS")
             ret += "The patched source code could pass TESTCASE! I really thank you for your great efforts.\n"
@@ -381,7 +370,6 @@ class Project:
             ret += "Please DO NOT send the same patch to me, repeated patches will harm the lives of others.\n"
             self.compile_succeeded = False
             self.testcase_succeeded = False
-            self.repo.git.reset("--hard")
         else:
             logger.info(f"PoC test                          PASS")
             ret += "Existing PoC could NOT TRIGGER the bug, which means your patch successfully fix the bug! I really thank you for your great efforts.\n"
