@@ -181,7 +181,7 @@ class Project:
         logger.debug(f"Applying patch {f.name}")
         try:
             self.repo.git.apply([f.name], v=True)
-            ret = "Patch applied successfully"
+            ret = "Patch applied successfully\n"
             # FIXME: patch or revised_patch?
             self.succeeded_patches.append(revised_patch)
             self.round_succeeded = True

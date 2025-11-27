@@ -39,10 +39,9 @@ def initial_agent(project: Project, api_key: str, debug_mode: bool):
     return agent_executor, llm
 
 
-def do_backport(agent_executor, project, data, llm):
-    log_dir = "../logs"
-    os.makedirs(log_dir, exist_ok=True)
-    logfile = os.path.join(log_dir, "{}-llm.log".format(data.tag))
+def do_backport(
+    agent_executor: AgentExecutor, project: Project, data, llm: ChatOpenAI, logfile: str
+):
     log_handler = FileCallbackHandler(logfile)
 
     patch = project._get_patch(data.new_patch)
@@ -72,7 +71,7 @@ def do_backport(agent_executor, project, data, llm):
                 logger.debug(
                     f"Failed to backport the hunk {idx} \n----------------------------------\n{pp}\n----------------------------------\n"
                 )
-                logger.error(f"Abort")
+                logger.error(f"Reach max_iterations for hunk {idx}")
                 exit(1)
 
     project.all_hunks_applied_succeeded = True
