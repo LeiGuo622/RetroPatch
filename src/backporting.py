@@ -2,6 +2,7 @@ import argparse
 import datetime
 import logging
 import os
+import subprocess
 from types import SimpleNamespace
 
 import yaml
@@ -63,6 +64,17 @@ def load_yml(file_path: str):
     return data
 
 
+def is_commit_valid(commit_id: str):
+    try:
+        subprocess.check_output(
+            ["git", "rev-parse", commit_id], stderr=subprocess.DEVNULL
+        )
+        return True
+    except:
+        logger.error(f"Commit id {commit_id} in .yml is invalid.")
+        return False
+
+
 def main():
     # process arguments
     parser = argparse.ArgumentParser(
@@ -108,11 +120,10 @@ def main():
     project = Project(data.project_url, data.project_dir, data.error_message)
     project.repo.git.clean("-fdx")
     if (
-        not project._checkout(data.new_patch)
-        or not project._checkout(data.target_release)
-        or not project._checkout(data.new_patch_parent)
+        not is_commit_valid(data.new_patch)
+        or not is_commit_valid(data.target_release)
+        or not is_commit_valid(data.new_patch_parent)
     ):
-        logger.error("Please check given commit id.")
         exit(1)
 
     # use LLM to backport

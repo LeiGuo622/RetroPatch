@@ -23,13 +23,9 @@ class Project:
         self.testcase_succeeded = False
         self.poc_succeeded = False
 
-    def _checkout(self, ref: str) -> bool:
+    def _checkout(self, ref: str):
         self.repo.git.reset("--hard")
-        try:
-            self.repo.git.checkout(ref)
-            return True
-        except:
-            return False
+        self.repo.git.checkout(ref)
 
     def _get_patch(self, ref: str) -> str:
         try:
