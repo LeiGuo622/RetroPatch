@@ -17,6 +17,7 @@ def main():
     """
     For generated patch, use this file to validate the patch if it could compile, pass test and poc.
     """
+    # parse arguments
     parser = argparse.ArgumentParser(
         description="Backports patch with the help of LLM",
         usage="%(prog)s --config CONFIG.yml\ne.g.: python %(prog)s --config CVE-examaple.yml",
@@ -24,10 +25,7 @@ def main():
     parser.add_argument(
         "-c", "--config", type=str, required=True, help="CVE config yml"
     )
-    parser.add_argument(
-        "-d", "--debug", action="store_true", default=True, help="enable debug mode"
-    )
-
+    parser.add_argument("-d", "--debug", action="store_true", help="enable debug mode")
     args = parser.parse_args()
     debug_mode = args.debug
     config_file = args.config
@@ -36,31 +34,15 @@ def main():
     else:
         logger.setLevel(logging.INFO)
 
+    # Initialize: load config, create project and get sh file in dataset
     data = load_yml(config_file)
-
-    data.project_dir = os.path.expanduser(
-        data.project_dir if data.project_dir.endswith("/") else data.project_dir + "/"
-    )
-    data.patch_dataset_dir = os.path.expanduser(
-        data.patch_dataset_dir
-        if data.patch_dataset_dir.endswith("/")
-        else data.patch_dataset_dir + "/"
-    )
-
-    if not os.path.isdir(data.project_dir):
-        logger.error(f"Project directory does not exist: {data.project_dir}")
-        exit(1)
-    if not os.path.isdir(data.patch_dataset_dir):
-        logger.error(
-            f"Patch dataset directory does not exist: {data.patch_dataset_dir}"
-        )
-        exit(1)
-
     for file in os.listdir(data.patch_dataset_dir):
         if os.path.exists(f"{data.project_dir}{file}"):
             os.remove(f"{data.project_dir}{file}")
         os.symlink(f"{data.patch_dataset_dir}{file}", f"{data.project_dir}{file}")
     project = Project(data.project_url, data.project_dir, data.patch_dataset_dir)
+
+    # HACK: call func to test patch here, for example, I call `_validate`
     revised_patch, _ = revise_patch(patch, project.dir)
     project.all_hunks_applied_succeeded = True
     project._validate(data.target_release, revised_patch)
@@ -75,7 +57,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # put the patch here
+    # HACK: put the patch here
     patch = """
 --- a/tools/tiffcp.c
 +++ b/tools/tiffcp.c

@@ -13,6 +13,17 @@ from tools.logger import add_file_handler, logger
 from tools.project import Project
 
 
+def is_commit_valid(commit_id: str):
+    try:
+        subprocess.check_output(
+            ["git", "rev-parse", commit_id], stderr=subprocess.DEVNULL
+        )
+        return True
+    except:
+        logger.error(f"Commit id {commit_id} in .yml is invalid.")
+        return False
+
+
 def load_yml(file_path: str):
     """
     Load YAML configuration from a file and return the data as a SimpleNamespace object.
@@ -61,18 +72,31 @@ def load_yml(file_path: str):
             "Dataset without error info which means that this vulnerability may not have PoC\n"
         )
 
-    return data
-
-
-def is_commit_valid(commit_id: str):
-    try:
-        subprocess.check_output(
-            ["git", "rev-parse", commit_id], stderr=subprocess.DEVNULL
+    data.project_dir = os.path.expanduser(
+        data.project_dir if data.project_dir.endswith("/") else data.project_dir + "/"
+    )
+    data.patch_dataset_dir = os.path.expanduser(
+        data.patch_dataset_dir
+        if data.patch_dataset_dir.endswith("/")
+        else data.patch_dataset_dir + "/"
+    )
+    if not os.path.isdir(data.project_dir):
+        logger.error(f"Project directory does not exist: {data.project_dir}")
+        exit(1)
+    if not os.path.isdir(data.patch_dataset_dir):
+        logger.error(
+            f"Patch dataset directory does not exist: {data.patch_dataset_dir}"
         )
-        return True
-    except:
-        logger.error(f"Commit id {commit_id} in .yml is invalid.")
-        return False
+        exit(1)
+
+    if (
+        not is_commit_valid(data.new_patch)
+        or not is_commit_valid(data.target_release)
+        or not is_commit_valid(data.new_patch_parent)
+    ):
+        exit(1)
+
+    return data
 
 
 def main():
@@ -93,7 +117,7 @@ def main():
     else:
         logger.setLevel(logging.INFO)
 
-    # load and check config
+    # load and check config, create file log
     data = load_yml(config_file)
     log_dir = "../logs"
     os.makedirs(log_dir, exist_ok=True)
@@ -101,32 +125,10 @@ def main():
     logfile = os.path.join(log_dir, f"{data.tag}-{now}.log")
     add_file_handler(logger, logfile)
 
-    data.project_dir = os.path.expanduser(
-        data.project_dir if data.project_dir.endswith("/") else data.project_dir + "/"
-    )
-    data.patch_dataset_dir = os.path.expanduser(
-        data.patch_dataset_dir
-        if data.patch_dataset_dir.endswith("/")
-        else data.patch_dataset_dir + "/"
-    )
-    if not os.path.isdir(data.project_dir):
-        logger.error(f"Project directory does not exist: {data.project_dir}")
-        exit(1)
-    if not os.path.isdir(data.patch_dataset_dir):
-        logger.error(
-            f"Patch dataset directory does not exist: {data.patch_dataset_dir}"
-        )
-        exit(1)
+    # use LLM to backport
     project = Project(data.project_url, data.project_dir, data.error_message)
     project.repo.git.clean("-fdx")
-    if (
-        not is_commit_valid(data.new_patch)
-        or not is_commit_valid(data.target_release)
-        or not is_commit_valid(data.new_patch_parent)
-    ):
-        exit(1)
 
-    # use LLM to backport
     before_usage = get_usage(data.openai_key)
     agent_executor, llm = initial_agent(project, data.openai_key, debug_mode)
     do_backport(agent_executor, project, data, llm, logfile)
