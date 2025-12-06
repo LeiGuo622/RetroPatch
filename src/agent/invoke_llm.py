@@ -103,7 +103,7 @@ def do_backport(
     tools = [viewcode, locate_symbol, validate]
     agent = create_tool_calling_agent(llm, tools, prompt)
     agent_executor = AgentExecutor(
-        agent=agent, tools=tools, verbose=True, max_iterations=5
+        agent=agent, tools=tools, verbose=True, max_iterations=20
     )
     agent_executor.invoke(
         {

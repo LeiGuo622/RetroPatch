@@ -130,7 +130,7 @@ class Project:
         contexts, num_context = utils.process_string(revised_patch)
         lineno = utils.find_most_similar_block("\n".join(contexts), lines, num_context)
 
-        startline = max(lineno - 5, 0)
+        startline = max(lineno - 1, 0)
         endline = min(lineno + 5 + num_context, len(lines))
         block = "Here are lines {} through {} of file {} for commit {}.\n".format(
             startline, endline, path, ref
@@ -143,11 +143,19 @@ class Project:
         differ = "```context diff\n"
         for i, context in enumerate(contexts):
             if context != lines[lineno - 1 + i]:
-                differ += f"On the line {revised_patch_line.index(context) + 1} of your patch. There is a slight difference between patch and the source code.\n"
-                differ += f"Your patch:             {context}\n"
-                differ += f"Original source code:   {lines[lineno - 1 + i]}\n"
-        differ += "```\n"
-
+                try:
+                    patch_lineno = revised_patch_line.index(context) + 1
+                    differ += f"On the line {patch_lineno} of your patch. There is a slight difference between patch and the source code.\n"
+                    differ += f"Your patch:             {context}\n"
+                    differ += f"Original source code:   {lines[lineno - 1 + i]}\n"
+                except:
+                    patch_lineno = revised_patch_line.index(context[1:]) + 1
+                    differ += f"On the line {patch_lineno} of your patch. There is an error caused by your line doesn't start with ` `(space).\n"
+                    differ += f"Your patch:             {context}\n"
+        if differ == "```context diff\n":
+            differ = "Here it shows that there is no difference between your context and the original code, the reason for the failure is that you didn't keep at least three lines of source code at the beginning and end of the patch, please follow this to fix it.\n"
+        else:
+            differ += "```\nREMEMBER For these lines you need to keep it start with `-` and ` ` (space) first, and then you need to copy the original source code behind it and use tab indentation. Please eliminate these diffs step by step. Be sure to eliminate these diffs the next time you generate a patch!\n"
         return block, differ
 
     def _apply_hunk(self, ref: str, patch: str) -> str:
@@ -189,8 +197,8 @@ class Project:
             ret += block
             ret += f"In addition to that, I've got more detailed error messages for you below where the context of your generated patch differs specifically from the source code context.\n"
             ret += differ
-            ret += f"Based on the above feedback or use tools `locate_symbol` and `viewcode` to re-check patch-related code snippet., MUST you please modify your patch so that the context present in your patch is exactly the same as the source code to guarantee that git apply can be executed normally.(Including the difference between SPACE and INDENTATION.)\n"
-            ret += "At tbe beginning and end of the hunk, ONLY need 3 lines context. For lines that start with '-' and ' ', both need to be matched as context. You MUST never confuse '->' with ''s'.\n"
+            ret += f"Based on the above feedback or use tools `locate_symbol` and `viewcode` to re-check patch-related code snippet. MUST you please modify your patch so that the context present in your patch is exactly the same as the source code to guarantee that git apply can be executed normally.(Including the difference between SPACE and INDENTATION.)\n"
+            ret += "At tbe beginning and end of the patch, MUST ate least need 3 lines context. For lines that start with '-' and ' ', both need to be matched as context. You MUST never confuse '->' with ''s'.\n"
         self.repo.git.reset("--hard")
         return ret
 
