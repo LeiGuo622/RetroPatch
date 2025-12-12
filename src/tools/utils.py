@@ -108,7 +108,7 @@ def find_sub_list(lst, neddle):
 
 
 def revise_patch(patch: str, project_path: str) -> tuple[str, bool]:
-    def revise_hunk(lines: list[str], file_content: list[str]) -> tuple[str, bool]:
+    def revise_hunk(lines: list[str]) -> tuple[str, bool]:
         if len(lines[-1]) == 0:
             lines = lines[:-1]
         orignal_line_number = sum(1 for line in lines[1:] if not line.startswith("+"))
@@ -152,22 +152,16 @@ def revise_patch(patch: str, project_path: str) -> tuple[str, bool]:
             f"+++ b/{fixed_file_path_b}",
         ]
 
-        with open(os.path.join(project_path, file_path_a), "r") as f:
-            file_content = f.readlines()
-            file_content = [line.rstrip() for line in file_content]
-
         last_line = -1
         for line_no in range(2, len(lines)):
             if lines[line_no].startswith("@@"):
                 if last_line != -1:
-                    hunk_lines, hunk_fixed = revise_hunk(
-                        lines[last_line:line_no], file_content
-                    )
+                    hunk_lines, hunk_fixed = revise_hunk(lines[last_line:line_no])
                     fixed_lines.append(hunk_lines)
                     block_fixed = block_fixed or hunk_fixed
                 last_line = line_no
         if last_line != -1:
-            hunk_lines, hunk_fixed = revise_hunk(lines[last_line:], file_content)
+            hunk_lines, hunk_fixed = revise_hunk(lines[last_line:])
             fixed_lines.append(hunk_lines)
             block_fixed = block_fixed or hunk_fixed
 

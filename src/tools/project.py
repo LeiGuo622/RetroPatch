@@ -89,7 +89,7 @@ class Project:
             ret.append(lines[i])
         return "\n".join(ret)
 
-    def _locate_symbol(self, ref: str, symbol: str) -> str | None:
+    def _locate_symbol(self, ref: str, symbol: str) -> list[tuple[str, int]] | None:
         """
         Locate a symbol in a specific ref of the target repository.
 
@@ -98,8 +98,9 @@ class Project:
             symbol (str): The symbol to locate.
 
         Returns:
-            str: The location of the symbol in the specified ref, or None if the symbol is not found.
+            list[tuple[str, int]]: File path and code lines.
         """
+        # XXX: Analyzing ctags file everytime locate symbol is time-consuming.
         self._checkout(ref)
         self._prepare()
         if symbol in self.symbol_map:
@@ -146,17 +147,47 @@ class Project:
                 try:
                     patch_lineno = revised_patch_line.index(context) + 1
                     differ += f"On the line {patch_lineno} of your patch. There is a slight difference between patch and the source code.\n"
-                    differ += f"Your patch:             {context}\n"
-                    differ += f"Original source code:   {lines[lineno - 1 + i]}\n"
+                    differ += f"          Your patch:{context}\n"
+                    differ += f"Original source code:{lines[lineno - 1 + i]}\n"
                 except:
                     patch_lineno = revised_patch_line.index(context[1:]) + 1
                     differ += f"On the line {patch_lineno} of your patch. There is an error caused by your line doesn't start with ` `(space).\n"
-                    differ += f"Your patch:             {context}\n"
+                    differ += f"Your patch:{context}\n"
         if differ == "```context diff\n":
             differ = "Here it shows that there is no difference between your context and the original code, the reason for the failure is that you didn't keep at least three lines of source code at the beginning and end of the patch, please follow this to fix it.\n"
         else:
             differ += "```\nREMEMBER For these lines you need to keep it start with `-` and ` ` (space) first, and then you need to copy the original source code behind it and use tab indentation. Please eliminate these diffs step by step. Be sure to eliminate these diffs the next time you generate a patch!\n"
         return block, differ
+
+    def _apply_file_move_handling(self, ref: str, old_patch: str) -> str:
+        ret = ""
+        missing_file_path = re.findall(r"--- a/(.*)", old_patch)[0]
+        # @@ -135,7 +135,6 @@ struct ksmbd_transport_ops {
+        # @@ -416,13 +416,7 @@ static void stop_sessions(void)
+        symbol_name = re.findall(r"\b\w+(?=\s*[{\(])", old_patch)[0]
+        symbol_locations = self._locate_symbol(ref, symbol_name)
+        if not symbol_locations:
+            logger.debug(f"No {missing_file_path} and no {symbol_name}() in the repo.")
+            # TODO: return what to LLM
+            # can not find symbol, the symbol is renamed or removed
+            exit(1)
+        else:
+            logger.debug(f"Find {symbol_name} in {symbol_locations}.")
+            find_file = False
+            for item in symbol_locations:
+                file_path = item[0]
+                new_patch = old_patch.replace(missing_file_path, file_path)
+                if "successfully" in self._apply_hunk(ref, new_patch):
+                    find_file = True
+                    logger.debug(f"{missing_file_path} has been moved to {file_path}.")
+                    ret += f"{missing_file_path} has been moved to {file_path}. Please use --- a/{file_path} in your patch.\n"
+                    break
+            if not find_file:
+                logger.debug(f"Patch can not be applied to {symbol_locations}.")
+                # TODO: return what to LLM
+                # find symbol, but patch can not apply directly
+                exit(1)
+        return ret
 
     def _apply_hunk(self, ref: str, patch: str) -> str:
         """
@@ -173,32 +204,40 @@ class Project:
             Exception: If the patch fails to apply.
 
         """
+        ret = ""
         self._checkout(ref)
         self.repo.git.reset("--hard")
         revised_patch, fixed = utils.revise_patch(patch, self.dir)
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write(revised_patch)
-        logger.debug("original patch")
-        logger.debug(patch)
         logger.debug("revised_patch")
         logger.debug(revised_patch)
         logger.debug(f"Applying patch {f.name}")
         try:
             self.repo.git.apply([f.name], v=True)
-            ret = "Patch applied successfully\n"
-            # FIXME: patch or revised_patch?
+            ret += "Patch applied successfully\n"
             self.succeeded_patches.append(revised_patch)
             self.round_succeeded = True
         except Exception as e:
-            ret = "Patch failed to apply with error, context mismatch.\n"
-            ret += "This patch does not apply, you CAN NOT send it to me again. Repeated patches will harm the lives of others.\n"
-            ret += "Next I'll give you the context of the previous error patch in the old version, and you should modify the previous error patch according to this section.\n"
-            block, differ = self._apply_error_handling(ref, revised_patch)
-            ret += block
-            ret += f"In addition to that, I've got more detailed error messages for you below where the context of your generated patch differs specifically from the source code context.\n"
-            ret += differ
-            ret += f"Based on the above feedback or use tools `locate_symbol` and `viewcode` to re-check patch-related code snippet. MUST you please modify your patch so that the context present in your patch is exactly the same as the source code to guarantee that git apply can be executed normally.(Including the difference between SPACE and INDENTATION.)\n"
-            ret += "At tbe beginning and end of the patch, MUST ate least need 3 lines context. For lines that start with '-' and ' ', both need to be matched as context. You MUST never confuse '->' with ''s'.\n"
+            logger.debug(f"{e.stderr}")
+            if "No such file" in e.stderr:
+                ret += self._apply_file_move_handling(ref, revised_patch)
+
+            elif "patch does not apply" in e.stderr:
+                ret += "This patch does not apply because of context mismatch, you CAN NOT send it to me again. Repeated patches will harm the lives of others.\n"
+                ret += "Next I'll give you the context of the previous error patch in the old version, and you should modify the previous error patch according to this section.\n"
+                block, differ = self._apply_error_handling(ref, revised_patch)
+                ret += block
+                ret += f"In addition to that, I've got more detailed error messages for you below where the context of your generated patch differs specifically from the source code context.\n"
+                ret += differ
+                ret += f"Based on the above feedback or use tools `locate_symbol` and `viewcode` to re-check patch-related code snippet. Please modify your patch so that the context in your patch is exactly the same as the source code, including the difference between SPACE and INDENTATION.\n"
+                ret += "At tbe beginning and end of the hunk, MUST has at least 3 lines context. For lines that start with '-' and ' ', both need to be matched as context. You MUST never confuse '->' with ''s'.\n"
+
+            elif "corrupt patch" in e.stderr:
+                # TODO: return what to LLM
+                # format error
+                pass
+
         self.repo.git.reset("--hard")
         return ret
 
