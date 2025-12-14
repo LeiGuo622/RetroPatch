@@ -296,10 +296,10 @@ class Project:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.dir,
+            text=True,
         )
         try:
-            stdout, stderr = build_process.communicate(timeout=60 * 60)
-            compile_result = stderr.decode("utf-8")
+            _, compile_result = build_process.communicate(timeout=60 * 60)
         except subprocess.TimeoutExpired:
             build_process.kill()
             ret += f"The compilation process of the patched source code is timeout. "
@@ -343,11 +343,11 @@ class Project:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.dir,
+            text=True,
         )
 
         try:
-            stdout, stderr = testcase_process.communicate(timeout=60 * 30)
-            testcase_result = stderr.decode("utf-8")
+            _, testcase_result = testcase_process.communicate(timeout=60 * 30)
         except subprocess.TimeoutExpired:
             testcase_process.kill()
             ret += "The TESTCASE process of the patched source code is timeout. "
@@ -390,12 +390,11 @@ class Project:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.dir,
+            text=True,
         )
 
         try:
-            stdout, stderr = poc_process.communicate(timeout=60 * 10)
-            # FIXME: why stderr, not stdout
-            poc_result = stderr.decode("utf-8")
+            _, poc_result = poc_process.communicate(timeout=60 * 10)
         except subprocess.TimeoutExpired:
             poc_process.kill()
             ret += "The TESTCASE process of the patched source code is timeout. "
