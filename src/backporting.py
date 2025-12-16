@@ -2,9 +2,9 @@ import argparse
 import datetime
 import logging
 import os
-import subprocess
 from types import SimpleNamespace
 
+import git
 import yaml
 
 from agent.invoke_llm import do_backport, initial_agent
@@ -13,13 +13,12 @@ from tools.logger import add_file_handler, logger
 from tools.project import Project
 
 
-def is_commit_valid(commit_id: str):
+def is_commit_valid(commit_id: str, project_dir: str):
     try:
-        subprocess.check_output(
-            ["git", "rev-parse", commit_id], stderr=subprocess.DEVNULL
-        )
+        repo = git.Repo(project_dir)
+        repo.commit(commit_id)
         return True
-    except:
+    except git.exc.BadName:
         logger.error(f"Commit id {commit_id} in .yml is invalid.")
         return False
 
@@ -90,9 +89,9 @@ def load_yml(file_path: str):
         exit(1)
 
     if (
-        not is_commit_valid(data.new_patch)
-        or not is_commit_valid(data.target_release)
-        or not is_commit_valid(data.new_patch_parent)
+        not is_commit_valid(data.new_patch, data.project_dir)
+        or not is_commit_valid(data.target_release, data.project_dir)
+        or not is_commit_valid(data.new_patch_parent, data.project_dir)
     ):
         exit(1)
 
