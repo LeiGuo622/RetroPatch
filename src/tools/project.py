@@ -334,7 +334,7 @@ class Project:
             logger.info(f"Compilation                       PASS")
             ret += "The patched source code could be COMPILED successfully! I really thank you for your great efforts.\n"
             self.compile_succeeded = True
-        self.repo.git.reset("--hard")
+        # self.repo.git.reset("--hard")
         return ret
 
     def _run_testcase(self) -> str:
