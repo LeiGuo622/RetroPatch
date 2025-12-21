@@ -269,6 +269,9 @@ def split_patch(patch: str, flag_commit: bool) -> Generator[str, None, None]:
                     or lines[line_no].endswith(".yml")
                     or lines[line_no].endswith(".md")
                     or lines[line_no].endswith(".tcl")
+                    or lines[line_no].endswith("CHANGES")
+                    or lines[line_no].endswith("ANNOUNCE")
+                    or lines[line_no].endswith("NEWS")
                 ):
                     last_line = -2
                 else:
@@ -289,6 +292,9 @@ def split_patch(patch: str, flag_commit: bool) -> Generator[str, None, None]:
                     or lines[line_no + 1].endswith(".yml")
                     or lines[line_no + 1].endswith(".md")
                     or lines[line_no + 1].endswith(".tcl")
+                    or lines[line_no + 1].endswith("CHANGES")
+                    or lines[line_no + 1].endswith("ANNOUNCE")
+                    or lines[line_no + 1].endswith("NEWS")
                 ):
                     last_line = -2
                 else:
