@@ -112,6 +112,7 @@ class Project:
     def _apply_error_handling(self, ref: str, revised_patch: str) -> Tuple[str, str]:
         """
         Generate feedback to llm when an error patch is applied.
+        When a file is not found, it is looked for in the five most similar files.
 
         Args:
             ref (str): The reference of the target repository.
@@ -124,12 +125,33 @@ class Project:
         path = re.findall(r"--- a/(.*)", revised_patch)[0]
         revised_patch_line = revised_patch.split("\n")
         revised_patch_line = [s[1:] for s in revised_patch_line]
-        file = self.repo.tree(ref) / path
-        content = file.data_stream.read().decode("utf-8")
-        lines = content.split("\n")
-
         contexts, num_context = utils.process_string(revised_patch)
-        lineno = utils.find_most_similar_block("\n".join(contexts), lines, num_context)
+        lineno = -1
+        lines = []
+        min_distance = float("inf")
+
+        try:
+            file = self.repo.tree(ref) / path
+            content = file.data_stream.read().decode("utf-8")
+            lines = content.split("\n")
+            lineno, dist = utils.find_most_similar_block(
+                "\n".join(contexts), lines, num_context
+            )
+        except:
+            similar_files = utils.find_most_similar_files(path.split("/")[-1], self.dir)
+            for similar_file in similar_files:
+                file = self.repo.tree(ref) / similar_file
+                content = file.data_stream.read().decode("utf-8")
+                similar_lines = content.split("\n")
+                current_line, current_dist = utils.find_most_similar_block(
+                    "\n".join(contexts), similar_lines, num_context
+                )
+
+                if current_dist < min_distance:
+                    min_distance = current_dist
+                    lineno = current_line
+                    path = similar_file
+                    lines = similar_lines
 
         startline = max(lineno - 1, 0)
         endline = min(lineno + 5 + num_context, len(lines))
@@ -185,7 +207,7 @@ class Project:
             logger.debug(f"No {missing_file_path} and no {symbol_name}() in the repo.")
             # TODO: return what to LLM
             # can not find symbol, the symbol is renamed or removed
-            exit(1)
+            return "Find file error"
         else:
             logger.debug(f"Find {symbol_name} in {symbol_locations}.")
             find_file = False
@@ -201,7 +223,7 @@ class Project:
                 logger.debug(f"Patch can not be applied to {symbol_locations}.")
                 # TODO: return what to LLM
                 # find symbol, but patch can not apply directly
-                exit(1)
+                return "Find file error"
         return ret
 
     def _apply_hunk(self, ref: str, patch: str) -> str:
@@ -236,10 +258,21 @@ class Project:
         except Exception as e:
             logger.debug(f"{e.stderr}")
             if "No such file" in e.stderr:
-                ret += self._apply_file_move_handling(ref, revised_patch)
+                try:
+                    find_ret = self._apply_file_move_handling(ref, revised_patch)
+                    if "Find file error" not in find_ret:
+                        ret += find_ret
+                        self.repo.git.reset("--hard")
+                        return ret
+                except:
+                    pass
 
-            elif "patch does not apply" in e.stderr:
-                # else:
+            if "corrupt patch" in e.stderr:
+                ret += "The patch you generated was detected as a corrupt patch, please check that one of `-`, `+`, ` ` (sapce) is added at the beginning of each line in the patch.\n"
+                ret += e.stderr
+                ret += "\nYou must add space before the line according to the stderr info.\n"
+                ret += "If you respond the same patch, many lifes will be killed because of you.\n"
+            else:
                 ret += "This patch does not apply because of context mismatch, you CAN NOT send it to me again. Repeated patches will harm the lives of others.\n"
                 ret += "Next I'll give you the context of the previous error patch in the old version, and you should modify the previous error patch according to this section.\n"
                 block, differ = self._apply_error_handling(ref, revised_patch)
@@ -248,16 +281,6 @@ class Project:
                 ret += differ
                 ret += f"Based on the above feedback or use tools `locate_symbol` and `viewcode` to re-check patch-related code snippet. Please modify your patch so that the context in your patch is exactly the same as the source code, including the difference between SPACE and INDENTATION.\n"
                 ret += "At tbe beginning and end of the hunk, MUST has at least 3 lines context. For lines that start with '-' and ' ', both need to be matched as context. You MUST never confuse '->' with ''s'.\n"
-
-            elif "corrupt patch" in e.stderr:
-                ret += "The patch you generated was detected as a corrupt patch, please check that one of `-`, `+`, ` ` (sapce) is added at the beginning of each line in the patch.\n"
-                ret += e.stderr
-                ret += "\nYou must add space before the line according to the stderr info.\n"
-                ret += "If you respond the same patch, many lifes will be killed because of you.\n"
-                return ret
-                # TODO: return what to LLM
-                # format error
-                # pass
 
         self.repo.git.reset("--hard")
         return ret

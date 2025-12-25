@@ -8,9 +8,42 @@ import Levenshtein
 from tools.logger import logger
 
 
+def find_most_similar_files(target_filename: str, search_directory: str) -> List[str]:
+    """
+    Find the five file paths that are most similar to non-existent files.
+
+    Args:
+        target_filename (str): The target file's name which we want to find out.
+        search_directory (str): Directory name which we need to find in.
+
+    Returns:
+        List[str]: List of the five most similar file.
+    """
+    top_n = 5
+    similarity_list = []
+
+    # Walk through all subdirectories and files in the search directory
+    for root, dirs, files in os.walk(search_directory):
+        for filename in files:
+            # Calculate the Levenshtein distance between the target filename and the current filename
+            distance = Levenshtein.distance(target_filename, filename)
+            relative_path = os.path.relpath(
+                os.path.join(root, filename), search_directory
+            )
+            similarity_list.append((distance, relative_path))
+
+    # Sort the list by distance in ascending order and get the top N results
+    similarity_list.sort(key=lambda x: x[0])
+    top_similar_files = [
+        relative_path for distance, relative_path in similarity_list[:top_n]
+    ]
+
+    return top_similar_files
+
+
 def find_most_similar_block(
     code_snippet: str, lines: List[str], snippet_num: int
-) -> int:
+) -> Tuple[int, int]:
     """
     Finds the most similar block of code in a list of lines to a given code snippet.
 
@@ -21,7 +54,7 @@ def find_most_similar_block(
 
     Returns:
         int: The index of the start line of the most similar block.
-
+        int: Minimum Edit Distance.
     """
     min_distance = float("inf")
     best_start_index = -1
@@ -34,7 +67,7 @@ def find_most_similar_block(
             min_distance = distance
             best_start_index = i + 1
 
-    return best_start_index
+    return best_start_index, min_distance
 
 
 def process_string(input_string: str) -> Tuple[str, int]:
@@ -272,6 +305,13 @@ def split_patch(patch: str, flag_commit: bool) -> Generator[str, None, None]:
                     or lines[line_no].endswith("CHANGES")
                     or lines[line_no].endswith("ANNOUNCE")
                     or lines[line_no].endswith("NEWS")
+                    or lines[line_no].endswith(".pem")
+                    or lines[line_no].endswith(".js")
+                    or lines[line_no].endswith(".sha1")
+                    or lines[line_no].endswith(".sha256")
+                    or lines[line_no].endswith(".uuid")
+                    or lines[line_no].endswith(".test")
+                    or lines[line_no].endswith("manifest")
                 ):
                     last_line = -2
                 else:
@@ -295,6 +335,13 @@ def split_patch(patch: str, flag_commit: bool) -> Generator[str, None, None]:
                     or lines[line_no + 1].endswith("CHANGES")
                     or lines[line_no + 1].endswith("ANNOUNCE")
                     or lines[line_no + 1].endswith("NEWS")
+                    or lines[line_no + 1].endswith(".pem")
+                    or lines[line_no + 1].endswith(".js")
+                    or lines[line_no + 1].endswith(".sha1")
+                    or lines[line_no + 1].endswith(".sha256")
+                    or lines[line_no + 1].endswith(".uuid")
+                    or lines[line_no + 1].endswith(".test")
+                    or lines[line_no + 1].endswith("manifest")
                 ):
                     last_line = -2
                 else:
