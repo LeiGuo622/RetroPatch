@@ -7,6 +7,24 @@ import Levenshtein
 
 from tools.logger import logger
 
+blacklist = [
+    ".rst",
+    ".yaml",
+    ".yml",
+    ".md",
+    ".tcl",
+    "CHANGES",
+    "ANNOUNCE",
+    "NEWS",
+    ".pem",
+    ".js",
+    ".sha1",
+    ".sha256",
+    ".uuid",
+    ".test",
+    "manifest",
+]
+
 
 def find_most_similar_files(target_filename: str, search_directory: str) -> List[str]:
     """
@@ -296,22 +314,9 @@ def split_patch(patch: str, flag_commit: bool) -> Generator[str, None, None]:
                             yield message + x
                 if last_line == -1 and flag_commit:
                     message = "\n".join(lines[: max(line_no - 2, 0)])
-                if (
-                    lines[line_no].endswith(".rst")
-                    or lines[line_no].endswith(".yaml")
-                    or lines[line_no].endswith(".yml")
-                    or lines[line_no].endswith(".md")
-                    or lines[line_no].endswith(".tcl")
-                    or lines[line_no].endswith("CHANGES")
-                    or lines[line_no].endswith("ANNOUNCE")
-                    or lines[line_no].endswith("NEWS")
-                    or lines[line_no].endswith(".pem")
-                    or lines[line_no].endswith(".js")
-                    or lines[line_no].endswith(".sha1")
-                    or lines[line_no].endswith(".sha256")
-                    or lines[line_no].endswith(".uuid")
-                    or lines[line_no].endswith(".test")
-                    or lines[line_no].endswith("manifest")
+                if any(
+                    lines[line_no].endswith(blacklist_item)
+                    for blacklist_item in blacklist
                 ):
                     last_line = -2
                 else:
@@ -326,22 +331,9 @@ def split_patch(patch: str, flag_commit: bool) -> Generator[str, None, None]:
                             yield message + x
                 if last_line == -1 and flag_commit:
                     message = "\n".join(lines[: max(line_no - 3, 0)])
-                if (
-                    lines[line_no + 1].endswith(".rst")
-                    or lines[line_no + 1].endswith(".yaml")
-                    or lines[line_no + 1].endswith(".yml")
-                    or lines[line_no + 1].endswith(".md")
-                    or lines[line_no + 1].endswith(".tcl")
-                    or lines[line_no + 1].endswith("CHANGES")
-                    or lines[line_no + 1].endswith("ANNOUNCE")
-                    or lines[line_no + 1].endswith("NEWS")
-                    or lines[line_no + 1].endswith(".pem")
-                    or lines[line_no + 1].endswith(".js")
-                    or lines[line_no + 1].endswith(".sha1")
-                    or lines[line_no + 1].endswith(".sha256")
-                    or lines[line_no + 1].endswith(".uuid")
-                    or lines[line_no + 1].endswith(".test")
-                    or lines[line_no + 1].endswith("manifest")
+                if any(
+                    lines[line_no + 1].endswith(blacklist_item)
+                    for blacklist_item in blacklist
                 ):
                     last_line = -2
                 else:
