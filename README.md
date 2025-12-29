@@ -16,7 +16,7 @@ new_patch: 881a070194783561fd209b7c789a4e75566f7f37 # patch commit id in new ver
 new_patch_parent: 6bb0f1171adfcccde2cd7931e74317cccb7db845 # patch parent commit, Version A 
 target_release: 13f294c3d7837d630b3e9b08089752bc07b730e6 # commid id which need to be fixed, Version B 
 sanitizer: LeakSanitizer # sanitizer type for poc, could be empty
-error_massage: "ERROR: LeakSanitizer" # poc trigger message for poc, could be empty
+error_message: "ERROR: LeakSanitizer" # poc trigger message for poc, could be empty
 tag: CVE-2023-3576
 openai_key: # Your openai key
 project_dir: dataset/libsdl-org/libtiff # path to your project

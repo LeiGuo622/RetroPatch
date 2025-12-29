@@ -4,7 +4,7 @@ new_patch: 881a070194783561fd209b7c789a4e75566f7f37
 new_patch_parent: 6bb0f1171adfcccde2cd7931e74317cccb7db845
 target_release: 13f294c3d7837d630b3e9b08089752bc07b730e6
 sanitizer: LeakSanitizer
-error_massage: "ERROR: LeakSanitizer"
+error_message: "ERROR: LeakSanitizer"
 tag: CVE-2023-3576
 openai_key: 
 project_dir: dataset/libsdl-org/libtiff
