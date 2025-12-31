@@ -76,7 +76,7 @@ def find_most_similar_block(
         int: Minimum Edit Distance.
     """
     min_distance = float("inf")
-    best_start_index = -1
+    best_start_index = 1
 
     for i in range(len(lines) - snippet_num + 1):
         combined = "\n".join(lines[i : i + snippet_num])

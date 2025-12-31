@@ -164,6 +164,7 @@ class Project:
         block += "```\n"
 
         differ = "```context diff\n"
+        contexts = contexts[: min(len(lines), len(contexts))]
         for i, context in enumerate(contexts):
             if context != lines[lineno - 1 + i]:
                 try:
