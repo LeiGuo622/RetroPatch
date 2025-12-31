@@ -336,7 +336,9 @@ class Project:
         logger.debug("Start compile the patched source code")
         if not os.path.exists(os.path.join(self.dir, "build.sh")):
             logger.debug("No build.sh file found.")
-            exit(1)
+            ret += "The patched source code could be COMPILED successfully! I really thank you for your great efforts.\n"
+            self.compile_succeeded = True
+            return ret
 
         build_process = subprocess.Popen(
             ["/bin/bash", "build.sh"],
