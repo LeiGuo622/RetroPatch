@@ -26,6 +26,9 @@ blacklist = [
     ".xml",
     "_test.go",
     ".json",
+    ".golden",
+    ".txt",
+    ".mdx",
 ]
 
 
