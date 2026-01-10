@@ -178,12 +178,10 @@ def revise_patch(patch: str, project_path: str) -> Tuple[str, bool]:
         # fix corrupt patch
         tmp_lines = []
         for line in lines[1:]:
-            if len(line) == 0:
-                tmp_lines.append(" ")
-            elif line.startswith("\t"):
-                tmp_lines.append(" " + line)
-            else:
+            if line.startswith("+") or line.startswith("-") or line.startswith(" "):
                 tmp_lines.append(line)
+            else:
+                tmp_lines.append(" " + line)
 
         # fix mismatch context
         contexts, num_context = extract_context("\n".join(tmp_lines))
