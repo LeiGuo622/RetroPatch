@@ -22,6 +22,7 @@ class Project:
         self.err_msg = err_msg
 
         self.succeeded_patches = []
+        self.context_mismatch_times = 0
         self.round_succeeded = False
         self.all_hunks_applied_succeeded = False
         self.compile_succeeded = False
@@ -128,8 +129,8 @@ class Project:
         """
         path = re.findall(r"--- a/(.*)", revised_patch)[0]
         revised_patch_line = revised_patch.split("\n")
+        contexts, num_context = utils.extract_context(revised_patch_line[2:])
         revised_patch_line = [s[1:] for s in revised_patch_line]
-        contexts, num_context = utils.extract_context(revised_patch)
         lineno = -1
         lines = []
         min_distance = float("inf")
@@ -138,9 +139,7 @@ class Project:
             file = self.repo.tree(ref) / path
             content = file.data_stream.read().decode("utf-8")
             lines = content.split("\n")
-            lineno, dist = utils.find_most_similar_block(
-                "\n".join(contexts), lines, num_context
-            )
+            lineno, dist = utils.find_most_similar_block(contexts, lines, num_context)
         except:
             similar_files = utils.find_most_similar_files(path.split("/")[-1], self.dir)
             for similar_file in similar_files:
@@ -228,7 +227,7 @@ class Project:
         for file_path in file_paths:
             new_patch = old_patch.replace(missing_file_path, file_path)
             logger.debug(f"Try to apply patch to {file_path}.")
-            if "successfully" in self._apply_hunk(ref, new_patch):
+            if "successfully" in self._apply_hunk(ref, new_patch, False):
                 find_file = True
                 logger.debug(f"{missing_file_path} has been moved to {file_path}.")
                 ret += f"{missing_file_path} has been moved to {file_path}. Please use --- a/{file_path} in your patch.\n"
@@ -241,7 +240,7 @@ class Project:
             return f"The target file has been moved, here is possible file paths:{file_paths}\n"
         return ret
 
-    def _apply_hunk(self, ref: str, patch: str) -> str:
+    def _apply_hunk(self, ref: str, patch: str, revise_context: bool = False) -> str:
         """
         Apply a hunk to a specific ref of the target repository.
 
@@ -259,7 +258,7 @@ class Project:
         ret = ""
         self._checkout(ref)
         self.repo.git.reset("--hard")
-        revised_patch, fixed = utils.revise_patch(patch, self.dir)
+        revised_patch, fixed = utils.revise_patch(patch, self.dir, revise_context)
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write(revised_patch)
         logger.debug("revised_patch")
@@ -287,6 +286,7 @@ class Project:
                 ret += "At the beginning and end of the hunk, MUST has at least 3 lines context."
                 if "'s" in revised_patch:
                     ret += " You should use '->' in code, rather than ''s'.\n"
+                self.context_mismatch_times += 1
 
         self.repo.git.reset("--hard")
         return ret
@@ -516,7 +516,9 @@ class Project:
                 ret += self._run_poc(patch)
             return ret
         else:
-            return self._apply_hunk(ref, patch)
+            return self._apply_hunk(
+                ref, patch, True if self.context_mismatch_times >= 2 else False
+            )
 
     def get_tools(self):
         return (

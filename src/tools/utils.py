@@ -66,7 +66,7 @@ def find_most_similar_files(target_filename: str, search_directory: str) -> List
 
 
 def find_most_similar_block(
-    code_snippet: str, lines: List[str], snippet_num: int
+    code_lines: List[str], lines: List[str], snippet_num: int
 ) -> Tuple[int, int]:
     """
     Finds the most similar block of code in a list of lines to a given code snippet.
@@ -84,9 +84,10 @@ def find_most_similar_block(
     best_start_index = 1
 
     for i in range(len(lines) - snippet_num + 1):
-        combined = "\n".join(lines[i : i + snippet_num])
-
-        distance = Levenshtein.distance(combined, code_snippet)
+        distance = sum(
+            Levenshtein.distance(code_lines[j], lines[i + j])
+            for j in range(snippet_num)
+        )
         if distance < min_distance:
             min_distance = distance
             best_start_index = i + 1
@@ -94,7 +95,7 @@ def find_most_similar_block(
     return best_start_index, min_distance
 
 
-def extract_context(input_string: str) -> Tuple[str, int]:
+def extract_context(lines: str) -> Tuple[str, int]:
     """
     Process the input string by removing certain lines and returning the processed string and the count of processed lines.
 
@@ -104,9 +105,7 @@ def extract_context(input_string: str) -> Tuple[str, int]:
     Returns:
         tuple[str, int]: A tuple containing the processed string and the count of processed lines.
     """
-    lines = input_string.split("\n")
     processed_lines = []
-
     for line in lines:
         if line.startswith(" "):
             processed_lines.append(line[1:])
@@ -160,7 +159,9 @@ def find_sub_list(lst: List, needle: List) -> List[int]:
     return match_pos
 
 
-def revise_patch(patch: str, project_path: str) -> Tuple[str, bool]:
+def revise_patch(
+    patch: str, project_path: str, revise_context: bool = False
+) -> Tuple[str, bool]:
     def revise_hunk(lines: list[str], target_file_lines: list[str]) -> tuple[str, bool]:
         fixed = False
         # fix wrong line number
@@ -184,10 +185,14 @@ def revise_patch(patch: str, project_path: str) -> Tuple[str, bool]:
                 tmp_lines.append(" " + line)
 
         # fix mismatch context
-        contexts, num_context = extract_context("\n".join(tmp_lines))
-        lineno, _ = find_most_similar_block(
-            "\n".join(contexts), target_file_lines, num_context
-        )
+        contexts, num_context = extract_context(tmp_lines)
+        lineno, dist = find_most_similar_block(contexts, target_file_lines, num_context)
+
+        # XXX: maybe force to revise wrongly
+        # max_dist = 12 * num_context
+        # if dist > max_dist:
+        if not revise_context:
+            return header + "\n".join(tmp_lines), fixed
 
         i = 0
         revised_lines = []
@@ -209,9 +214,8 @@ def revise_patch(patch: str, project_path: str) -> Tuple[str, bool]:
             else:
                 revised_lines.append(line)
             i += 1
-        revised_hunk = "\n".join(revised_lines)
 
-        return header + revised_hunk, fixed
+        return header + "\n".join(revised_lines), fixed
 
     def revise_block(lines: list[str]) -> tuple[list[str], bool]:
         try:
@@ -241,7 +245,7 @@ def revise_patch(patch: str, project_path: str) -> Tuple[str, bool]:
         ]
 
         with open(os.path.join(project_path, file_path_a), "r") as f:
-            file_content = f.readlines()
+            file_content = [line.rstrip("\n") for line in f]
 
         last_line = -1
         for line_no in range(2, len(lines)):

@@ -48,7 +48,8 @@ def do_backport(
     pps = split_patch(patch, True)
     for idx, pp in enumerate(pps):
         project.round_succeeded = False
-        ret = project._apply_hunk(data.target_release, pp)
+        project.context_mismatch_times = 0
+        ret = project._apply_hunk(data.target_release, pp, False)
         if project.round_succeeded:
             logger.debug(f"Hunk {idx} can be applied without any conflicts")
             continue
