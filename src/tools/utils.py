@@ -208,11 +208,8 @@ def revise_patch(
             # test if context same
             # XXX: the first line of the hunk must be corresponding to the lineno
             new_line = target_file_lines[lineno - 1 + i]
-            if line.strip() != new_line.strip():
-                revised_lines.append(sign + new_line.strip("\n"))
-                fixed = True
-            else:
-                revised_lines.append(line)
+            revised_lines.append(sign + new_line.strip("\n"))
+            fixed = True
             i += 1
 
         return header + "\n".join(revised_lines), fixed
