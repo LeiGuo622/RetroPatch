@@ -17,9 +17,9 @@ You have 3 tools: `viewcode` `locate_symbol` and `validate`
 0. ref: the commit hash of the ref you want to view the file from.
 1. symbol: the function name you want to locate in the codebase.
 
-- `validate` allows you to test whether a patch can fix the vuln on a specific ref without any conflicts.
+- `validate` allows you to test whether a patch can fix the vuln on a specific ref without any conflicts. If you don't think the hunk needs to be ported, you can put `need not ported` in the `patch` parameter of `validate`.
 0. ref: the commit hash of the ref you want to test the patch on.
-1. patch: the patch you want to test. Each line of patch must start with `+`, `-` or ` ` (space) and use tab indentation.
+1. patch: the patch you want to test. Each line of patch must start with `+`, `-` or ` ` (space) and use tab indentation. If migration is not required, put `need not ported`.
 
 [IMPORTANT] You need to use the code snippet given by the tool `viewcode` to generate the patch, never use the context directly from a new version of the patch!
 
@@ -75,7 +75,7 @@ Your workflow should be:
 2. Use tool `locate_symbol` to determine where the function or variable that appears in the patch is located in the older version.
 3. Use tool `viewcode` to view the location of the symbol given by `locate_symbol` or line number given by similar code block. Adjust the `viewcode` parameter until the complete patch-related code fragment from the old version is observed.
 4. Based on the code given by `viewcode`, craft a patch that can fix the vuln.
-5. Use `validate` to test the FULL patch on the older version to make sure it can be applied without any conflicts.
+5. Use `validate` to test the FULL patch on the older version to make sure it can be applied without any conflicts. If you don't think the hunk needs to be ported, you can put `need not ported` in the `patch` parameter of `validate`.
 
 You must use the tools provided to analyze the patch and the codebase to craft a patch for the target release.
 

@@ -138,7 +138,9 @@ class Project:
             file = self.repo.tree(ref) / path
             content = file.data_stream.read().decode("utf-8")
             lines = content.split("\n")
-            lineno, dist = utils.find_most_similar_block(contexts, lines, num_context)
+            lineno, dist = utils.find_most_similar_block(
+                contexts, lines, num_context, False
+            )
         except:
             similar_files = utils.find_most_similar_files(path.split("/")[-1], self.dir)
             for similar_file in similar_files:
@@ -146,7 +148,7 @@ class Project:
                 content = file.data_stream.read().decode("utf-8")
                 similar_lines = content.split("\n")
                 current_line, current_dist = utils.find_most_similar_block(
-                    "\n".join(contexts), similar_lines, num_context
+                    "\n".join(contexts), similar_lines, num_context, False
                 )
 
                 if current_dist < min_distance:
@@ -513,6 +515,9 @@ class Project:
                 ret += self._run_poc(patch)
             return ret
         else:
+            if "need not ported" in patch:
+                self.round_succeeded = True
+                return "Patch applied successfully\n"
             return self._apply_hunk(
                 ref, patch, True if self.context_mismatch_times >= 2 else False
             )
