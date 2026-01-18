@@ -128,9 +128,8 @@ class Project:
 
         """
         path = re.findall(r"--- a/(.*)", revised_patch)[0]
-        revised_patch_line = revised_patch.split("\n")
-        contexts, num_context = utils.extract_context(revised_patch_line[2:])
-        revised_patch_line = [s[1:] for s in revised_patch_line]
+        revised_patch_line = revised_patch.split("\n")[3:]
+        contexts, num_context = utils.extract_context(revised_patch_line)
         lineno = -1
         lines = []
         min_distance = float("inf")
@@ -168,17 +167,15 @@ class Project:
 
         differ = "```context diff\n"
         contexts = contexts[: min(len(lines), len(contexts))]
-        for i, context in enumerate(contexts):
-            if context != lines[lineno - 1 + i]:
-                try:
-                    patch_lineno = revised_patch_line.index(context) + 1
-                    differ += f"On the line {patch_lineno} of your patch. There is a slight difference between patch and the source code.\n"
-                    differ += f"          Your patch:{context}\n"
-                    differ += f"Original source code:{lines[lineno - 1 + i]}\n"
-                except:
-                    patch_lineno = revised_patch_line.index(context[1:]) + 1
-                    differ += f"On the line {patch_lineno} of your patch. There is an error caused by your line doesn't start with ` `(space).\n"
-                    differ += f"Your patch:{context}\n"
+        j = 0
+        for i, context in enumerate(revised_patch_line):
+            if context.startswith(" ") or context.startswith("-"):
+                if context[1:] != lines[lineno - 1 + j]:
+                    differ += f"On the line {i + 4} of your patch. There is a slight difference between patch and the source code.\n"
+                    differ += f"          Your patch:{context[1:]}\n"
+                    differ += f"Original source code:{lines[lineno - 1 + j]}\n"
+                j += 1
+
         if differ == "```context diff\n":
             differ = "Here it shows that there is no difference between your context and the original code, the reason for the failure is that you didn't keep at least three lines of source code at the beginning and end of the patch, please follow this to fix it.\n"
         else:
