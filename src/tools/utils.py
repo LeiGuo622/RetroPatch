@@ -117,52 +117,25 @@ def extract_context(lines: str) -> Tuple[str, int]:
     return processed_lines, processed_lines_count
 
 
-def find_sub_list(lst: List, needle: List) -> List[int]:
-    """
-    Find all occurrences of a sublist in a given list using the Knuth-Morris-Pratt (KMP) algorithm.
-
-    Args:
-        lst (list): The list to search in.
-        neddle (list): The sublist to find.
-
-    Returns:
-        list: A list of indices where the sublist is found in the main list.
-    """
-    match_pos = []
-
-    def get_next(p):
-        next = [0] * len(p)
-        for i in range(1, len(p)):
-            j = next[i - 1]
-            while j > 0 and p[i] != p[j]:
-                j = next[j - 1]
-            if p[i] == p[j]:
-                j += 1
-            next[i] = j
-        return next
-
-    next = get_next(needle)
-    i = 0
-    j = 0
-    while i < len(lst):
-        if lst[i] == needle[j]:
-            i += 1
-            j += 1
-            if j == len(needle):
-                match_pos.append(i - j)
-                j = next[j - 1]
-        else:
-            if j == 0:
-                i += 1
-            else:
-                j = next[j - 1]
-    return match_pos
-
-
 def revise_patch(
     patch: str, project_path: str, revise_context: bool = False
 ) -> Tuple[str, bool]:
+    """fix mistakes in generated patch.
+    1. wrong line numbers.
+    2. wrong format: not startswith ` `, `-` or `+`
+    3. wrong context lines: a) wrong indention. b) wrong lines.
+
+    Args:
+        patch (str): patch to be revised.
+        project_path (str): CVE project source code in local.
+        revise_context (bool, optional): True means force to revise all context lines. Defaults to False.
+
+    Returns:
+        Tuple[str, bool]: revised patch and fix flag.
+    """
+
     def revise_hunk(lines: list[str], target_file_lines: list[str]) -> tuple[str, bool]:
+        """fix lines from "@@" to the end"""
         fixed = False
         # fix wrong line number
         if len(lines[-1]) == 0 or "\ No newline at end of file" in lines[-1]:
@@ -228,6 +201,7 @@ def revise_patch(
         return header + "\n".join(revised_lines), fixed
 
     def revise_block(lines: list[str]) -> tuple[list[str], bool]:
+        """fix "--- a/" and "+++ b/", and call revise_hunk."""
         try:
             file_path_a = re.findall(r"--- a/(.*)", lines[0])[0]
             fixed_file_path_a = os.path.normpath(file_path_a)
