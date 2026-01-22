@@ -170,10 +170,7 @@ def revise_patch(
         for line in tmp_lines:
             if line.startswith(" ") or line.startswith("-"):
                 sign = line[0]
-                if not target_file_lines:
-                    new_line = "no such file"
-                else:
-                    new_line = target_file_lines[lineno - 1 + i]
+                new_line = target_file_lines[lineno - 1 + i]
                 if revise_context:
                     revised_lines.append(" " + new_line.strip("\n"))
                 elif line[1:].strip() == new_line.strip():
@@ -231,8 +228,9 @@ def revise_patch(
             with open(os.path.join(project_path, file_path_a), "r") as f:
                 file_content = [line.rstrip("\n") for line in f]
         except:
-            file_content = []
-            logger.debug("File path in patch did not exist!")
+            # do not revise patch if file changed, handle changed file in `_apply_hunk`
+            return lines, False
+
         last_line = -1
         for line_no in range(2, len(lines)):
             if lines[line_no].startswith("@@"):
