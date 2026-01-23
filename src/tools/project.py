@@ -285,7 +285,6 @@ class Project:
                 ret += "At the beginning and end of the hunk, MUST has at least 3 lines context."
                 if "'s" in revised_patch:
                     ret += " You should use '->' in code, rather than ''s'.\n"
-                self.context_mismatch_times += 1
 
         self.repo.git.reset("--hard")
         return ret
@@ -518,9 +517,13 @@ class Project:
             if "need not ported" in patch:
                 self.round_succeeded = True
                 return "Patch applied successfully\n"
-            return self._apply_hunk(
+
+            ret = self._apply_hunk(
                 ref, patch, True if self.context_mismatch_times >= 2 else False
             )
+            if "CONTEXT MISMATCH" in ret:
+                self.context_mismatch_times += 1
+            return ret
 
     def get_tools(self):
         return (
