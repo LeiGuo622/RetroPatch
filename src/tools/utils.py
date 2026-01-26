@@ -88,7 +88,9 @@ def find_most_similar_block(
             Levenshtein.distance(code_lines[j], lines[i + j])
             for j in range(snippet_num)
         )
-        if distance < min_distance and not (dline_flag and lines[i].startswith("+")):
+        if distance < min_distance and not (
+            dline_flag and (lines[i].startswith("+") or lines[i].startswith("-"))
+        ):
             min_distance = distance
             best_start_index = i + 1
 
@@ -176,7 +178,7 @@ def revise_patch(
                 elif line[1:].strip() == new_line.strip():
                     revised_lines.append(sign + new_line.strip("\n"))
                 else:
-                    revised_lines.append(line)
+                    revised_lines.append(line.replace("'s", "->"))
                 i += 1
             else:
                 revised_lines.append(line)
