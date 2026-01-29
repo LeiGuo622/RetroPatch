@@ -173,7 +173,7 @@ class Project:
         for i, context in enumerate(revised_patch_line):
             if context.startswith(" ") or context.startswith("-"):
                 if context[1:] != lines[lineno - 1 + j]:
-                    differ += f"On the line {i + 4} of your patch. There is a slight difference between patch and the source code.\n"
+                    differ += f"On the line {i + 4} of your patch.\n"
                     differ += f"          Your patch:{context[1:]}\n"
                     differ += f"Original source code:{lines[lineno - 1 + j]}\n"
                 j += 1
@@ -181,7 +181,7 @@ class Project:
         if differ == "```context diff\n":
             differ = "Here it shows that there is no difference between your context and the original code, the reason for the failure is that you didn't keep at least three lines of source code at the beginning and end of the patch, please follow this to fix it.\n"
         else:
-            differ += "```\nREMEMBER For these lines you need to keep it start with `-` and ` ` (space) first, and then you need to copy the original source code behind it and use tab indentation. Please eliminate these diffs step by step. Be sure to eliminate these diffs the next time you generate a patch!\n"
+            differ += "```\nPlease eliminate these diffs step by step. Be sure to eliminate these diffs the next time you generate a patch!\n"
         return block, differ
 
     def _apply_file_move_handling(self, ref: str, old_patch: str) -> str:
@@ -257,11 +257,12 @@ class Project:
         ret = ""
         self._checkout(ref)
         self.repo.git.reset("--hard")
+        if revise_context:
+            logger.debug("original patch:\n" + patch)
         revised_patch, fixed = utils.revise_patch(patch, self.dir, revise_context)
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write(revised_patch)
-        logger.debug("revised_patch")
-        logger.debug(revised_patch)
+        logger.debug("revised patch:\n" + revised_patch)
         logger.debug(f"Applying patch {f.name}")
         try:
             self.repo.git.apply([f.name], v=True)
@@ -269,22 +270,19 @@ class Project:
             self.succeeded_patches.append(revised_patch)
             self.round_succeeded = True
         except Exception as e:
-            logger.debug(f"{e.stderr}")
             if "No such file" in e.stderr:
+                logger.debug(f"File not found")
                 find_ret = self._apply_file_move_handling(ref, revised_patch)
                 ret += find_ret
             elif "corrupt patch" in e.stderr:
                 raise Exception("Unexpected corrupt patch")
             else:
+                logger.debug(f"Context mismatch")
                 ret += "This patch does not apply because of CONTEXT MISMATCH. Context are patch lines that already exist in the file, that is, lines starting with ` ` and `-`. You should modify the error patch according to the context of older version.\n"
                 block, differ = self._apply_error_handling(ref, revised_patch)
                 ret += block
                 ret += "Besides, here is detailed info about how the context differs between the patch and the old version.\n"
                 ret += differ
-                ret += "Please modify the patch so that the context is TOTALLY IDENTICAL with the old version, including BLANK LINE and INDENTATION. "
-                ret += "At the beginning and end of the hunk, MUST has at least 3 lines context."
-                if "'s" in revised_patch:
-                    ret += " You should use '->' in code, rather than ''s'.\n"
 
         self.repo.git.reset("--hard")
         return ret
