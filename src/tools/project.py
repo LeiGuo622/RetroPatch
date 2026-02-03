@@ -33,6 +33,9 @@ class Project:
         self.testcase_succeeded = False
         self.poc_succeeded = False
         self.symbol_map = {}
+        self.now_hunk = ""
+        self.now_hunk_num = 0
+        self.hunk_log_info = {}
 
     def _checkout(self, ref: str) -> None:
         self.repo.git.reset("--hard")
@@ -122,15 +125,45 @@ class Project:
         else:
             return None
 
-    def _git_history() -> str:
+    def _git_history(self) -> str:
         """
+        XXX: TBD
 
+        Args:
+            XXX
 
         Returns:
             XXX(str):
         """
+        if self.now_hunk != "completed":
+            merge_base = self.repo.merge_base(
+                self.target_release, self.new_patch_parent
+            )
+            start_commit = merge_base[0].hexsha if merge_base else None
+            hunk = self.now_hunk
+            filepath = re.findall(r"--- a/(.*)", hunk)[0]
+            chunks = re.findall(r"@@ -(\d+),(\d+) \+(\d+),(\d+) @@(.*)", hunk)[0]
+            start_line = chunks[0]
+            end_line = int(chunks[0]) + int(chunks[1]) - 1
+            log_message = self.repo.git.log(
+                "--oneline",
+                f"-L {start_line},{end_line}:{filepath}",
+                f"{start_commit}..{self.new_patch_parent}",
+            )
 
-    def _git_show(ref: str) -> str:
+            if self.now_hunk_num not in self.hunk_log_info:
+                sha_lines = re.findall(
+                    r".*\b[0-9a-fA-F]{12}\b.*", log_message, re.MULTILINE
+                )
+                self.hunk_log_info[self.now_hunk_num] = []
+                for line in sha_lines:
+                    self.hunk_log_info[self.now_hunk_num].append(line)
+            return log_message
+
+        else:
+            pass
+
+    def _git_show(self, ref: str) -> str:
         """
         Show commit message for a specific ref when LLM need.
 
@@ -641,10 +674,10 @@ def create_git_history_tool(project: Project):
 
 def create_git_show_tool(project: Project):
     @tool
-    def git_show() -> str:
+    def git_show(ref: str) -> str:
         """
-        get history for lines which relate to patch hunk.
+        show change log for a specific ref
         """
-        return project._git_show()
+        return project._git_show(ref)
 
     return git_show

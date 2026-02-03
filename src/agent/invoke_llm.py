@@ -62,6 +62,8 @@ def do_backport(
                 similar_block = "Something error in finding similar block\n" + ret
                 logger.warning("Something error in finding similar block")
             logger.debug(f"Hunk {idx} can not be applied, using LLM to generate a fix")
+            project.now_hunk = pp
+            project.now_hunk_num = idx
             agent_executor.invoke(
                 {
                     "project_url": data.project_url,
@@ -81,6 +83,7 @@ def do_backport(
 
     project.all_hunks_applied_succeeded = True
     logger.info(f"Aplly all hunks in the patch      PASS")
+    project.now_hunk = "completed"
     complete_patch = "\n".join(project.succeeded_patches)
     project.repo.git.clean("-fdx")
     for file in os.listdir(data.patch_dataset_dir):
