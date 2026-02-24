@@ -186,7 +186,7 @@ def revise_patch(
                 new_line = target_file_lines[lineno - 1 + i]
                 if revise_context:
                     revised_lines.append(" " + new_line.strip("\n"))
-                elif line[1:].strip() == new_line.strip():
+                elif re.sub(r"\s+", "", line[1:]) == re.sub(r"\s+", "", new_line):
                     revised_lines.append(sign + new_line.strip("\n"))
                 else:
                     revised_lines.append(line)
