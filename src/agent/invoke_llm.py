@@ -54,13 +54,8 @@ def do_backport(
             logger.debug(f"Hunk {idx} can be applied without any conflicts")
             continue
         else:
-            try:
-                similar_block = re.findall(
-                    r"version.\n(.*?)\nBesides,", ret, re.DOTALL
-                )[0]
-            except:
-                similar_block = "Something error in finding similar block\n" + ret
-                logger.warning("Something error in finding similar block")
+            block_list = re.findall(r"older version.\n(.*?)\nBesides,", ret, re.DOTALL)
+            similar_block = "\n".join(block_list)
             logger.debug(f"Hunk {idx} can not be applied, using LLM to generate a fix")
             project.now_hunk = pp
             project.now_hunk_num = idx

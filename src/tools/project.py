@@ -293,7 +293,8 @@ class Project:
                 # XXX: find symbol: the word before the first '{' or '('
                 # @@ -135,7 +135,6 @@ struct ksmbd_transport_ops {
                 # @@ -416,13 +416,7 @@ static void stop_sessions(void)
-                symbol_name = re.findall(r"\b\w+(?=\s*[{\(])", old_patch)[0]
+                at_line = old_patch.split("\n")[2]
+                symbol_name = re.findall(r"\b\w+(?=\s*[{\(])", at_line)[0]
                 symbol_locations = self._locate_symbol(ref, symbol_name)
                 if not symbol_locations:
                     logger.debug(
@@ -312,22 +313,19 @@ class Project:
                 )
 
         # try to apply patch to the target files
-        find_file = False
         for file_path in file_paths:
             new_patch = old_patch.replace(missing_file_path, file_path)
             logger.debug(f"Try to apply patch to {file_path}.")
-            if "successfully" in self._apply_hunk(ref, new_patch, False):
-                find_file = True
+            apply_ret = self._apply_hunk(ref, new_patch, False)
+            if "successfully" in apply_ret:
                 logger.debug(f"{missing_file_path} has been moved to {file_path}.")
-                ret += f"{missing_file_path} has been moved to {file_path}. Please use --- a/{file_path} in your patch.\n"
-                break
+                return f"{missing_file_path} has been moved to {file_path}. Please use --- a/{file_path} in your patch.\n"
+            else:
+                ret += apply_ret
 
         # patch can not apply directly
-        if not find_file:
-            logger.debug(f"Patch can not be applied to {file_paths}.")
-            # find symbol, but patch can not apply directly
-            return f"The target file has been moved, here is possible file paths:{file_paths}\n"
-        return ret
+        logger.debug(f"Patch can not be applied to {file_paths}.")
+        return f"The target file has been moved, here is possible file paths:{file_paths}\n{ret}"
 
     def _apply_hunk(self, ref: str, patch: str, revise_context: bool = False) -> str:
         """
