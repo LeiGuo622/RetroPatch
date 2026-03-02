@@ -78,7 +78,7 @@ Your workflow should be:
 1. Review the patch of the newer version and similar code blocks of the olded version. 
 2. Use `git_history` to check code change history. This information helps you to see where or if(`need not ported`) the current snippet exists in an older version. Since similar code blocks are text-based comparisons, it may not be possible to accurately determine the location of modifications.  
 2.1. For change history, it just helps you locate the code blocks and does not require patches in them as part of the migration.
-2.2. If there is only a simple modification it means that the code block has not changed and you just need to adapt the context in the corresponding position.
+2.2. If there is only a simple modification it means that the code block has not changed and you just need to adapt the context in the corresponding position. (I.e. the patch just needs to adapt the context of the beginning of the space.)
 2.3. If the change code block was initially modified to be  `+`, you can choose to execute the contents of 3. to determine the source of this code.
 3. (Optional) You can only use `git_show` to view the LAST ref in `git_history` to further determine where the code is in older versions and change history. Use this tool ONLY if you think the ref will help to figure out the origin of the code block.
 3.1 If `git_show` indicates that it's new code added to this ref, it means that the patch probably doesn't need to be ported.

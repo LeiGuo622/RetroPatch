@@ -158,7 +158,10 @@ class Project:
                 self.hunk_log_info[self.now_hunk_num] = []
                 for line in sha_lines:
                     self.hunk_log_info[self.now_hunk_num].append(line)
-            return log_message
+            ret = log_message
+            ret += "\nIf there is only a simple modification it means that the code block has not changed and you just need to adapt the context in the corresponding position.\n"
+            ret += "If the change code block was initially modified to be many `+` lines, you can choose to execute `git_show` to determine the source of this code.\n"
+            return ret
 
         else:
             # XXX TBD
@@ -179,8 +182,12 @@ class Project:
             # XXX maybe too much context will confuse LLM, how could we refine it.
             ref_line = self.hunk_log_info[self.now_hunk_num][-1]
             ref = ref_line.split(" ")[0].strip()
-            ret = self.repo.git.show(f"{ref}")
-            return ret[: min(10001, len(ret))]
+            log = self.repo.git.show(f"{ref}")
+            ret = log[: min(10001, len(log))]
+            ret += "\nThis commit carries a lot of information, and you can determine where the target code is fast in the old version based on the code changes in the commit."
+            ret += "\nPlease think step by step. Is the block of code that needs to be changed newly introduced in this commit?"
+            ret += "\nIf it is newly introduced should we consider that this hunk `need not ported`. If this commit shows that it was migrated from a certain function in a certain file, you might consider backtracking in the function of the file shown by the commit.\n"
+            return ret
         except:
             return "Something error, maybe you don't use git_history before or git_history is empty."
 
@@ -404,6 +411,7 @@ class Project:
             with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
                 f.write(revised_patch)
             try:
+                # XXX 这里应该把修正后的patch加到结果里面
                 self.repo.git.apply([f.name], v=True)
                 logger.debug(
                     f"The joined patch hunk {idx} could be applied successfully, file {f.name}"
