@@ -37,6 +37,8 @@ class Project:
         self.now_hunk = ""
         self.now_hunk_num = 0
         self.hunk_log_info = {}
+        self.add_percent = 0
+        self.last_context = []
 
     def _checkout(self, ref: str) -> None:
         self.repo.git.reset("--hard")
@@ -103,7 +105,10 @@ class Project:
         endline = min(endline, len(lines))
         for i in range(startline - 1, endline):
             ret.append(lines[i])
-        return "\n".join(ret)
+        return (
+            "\n".join(ret)
+            + "\nBased on the previous information, think carefully do you see the target code? You may want to keep checking if you don't.\n"
+        )
 
     def _locate_symbol(self, ref: str, symbol: str) -> List[Tuple[str, int]] | None:
         """
@@ -179,16 +184,28 @@ class Project:
                 f"{start_commit}..{self.new_patch_parent}",
             )
             # save each hunk related refs
-            if self.now_hunk_num not in self.hunk_log_info:
+            if self.now_hunk_num not in self.hunk_log_info and log_message:
+                last_context = list(utils.split_patch(log_message, False))[-1]
+                (
+                    _,
+                    context_line_num,
+                    self.last_context,
+                    add_line_num,
+                ) = utils.extract_context(last_context.split("\n")[3:])
+                self.add_percent = add_line_num / (add_line_num + context_line_num)
+
                 sha_lines = re.findall(
                     r".*\b[0-9a-fA-F]{12}\b.*", log_message, re.MULTILINE
                 )
                 self.hunk_log_info[self.now_hunk_num] = []
                 for line in sha_lines:
                     self.hunk_log_info[self.now_hunk_num].append(line)
+
             ret = log_message
-            ret += "\nIf there is only a simple modification it means that the code block has not changed and you just need to adapt the context in the corresponding position.\n"
-            ret += "If the change code block was initially modified to be many `+` lines, you can choose to execute `git_show` to determine the source of this code.\n"
+            ret += "\nYou need to do the following analysis based on the information in the last commit:\n"
+            ret += "Analyze the code logic of the context of the patch to be ported in this commit step by step.\n"
+            ret += "If code logic already existed before this commit, the patch context can be assumed to remain in a similar location. Use `locate` and `viewcode` to check your results.\n"
+            ret += "If code logic were added in this commit, then you need to `git_show` for further details.\n"
             return ret
 
         else:
@@ -211,10 +228,49 @@ class Project:
             ref_line = self.hunk_log_info[self.now_hunk_num][-1]
             ref = ref_line.split(" ")[0].strip()
             log = self.repo.git.show(f"{ref}")
-            ret = log[: min(10001, len(log))]
-            ret += "\nThis commit carries a lot of information, and you can determine where the target code is fast in the old version based on the code changes in the commit."
-            ret += "\nPlease think step by step. Is the block of code that needs to be changed newly introduced in this commit?"
-            ret += "\nIf it is newly introduced should we consider that this hunk `need not ported`. If this commit shows that it was migrated from a certain function in a certain file, you might consider backtracking in the function of the file shown by the commit.\n"
+            pps = utils.split_patch(log, False)
+            dist = float("inf")
+            last_context_len = len(self.last_context)
+            best_context = []
+            file_path = ""
+            file_no = 0
+
+            for idx, pp in enumerate(pps):
+                try:
+                    file_path_i = re.findall(r"--- a/(.*)", pp)[0]
+                    chunks = re.findall(r"@@ -(\d+),(\d+) \+(\d+),(\d+) @@(.*)", pp)[0]
+                    contexts, _, _, _ = utils.extract_context(pp.split("\n")[3:])
+                    if (int(chunks[1]) - int(chunks[3])) < last_context_len:
+                        continue
+                    lineno, dist_i = utils.find_most_similar_block(
+                        self.last_context, contexts, last_context_len, False
+                    )
+                    if dist_i < dist:
+                        best_context = contexts[
+                            lineno - 1 : lineno - 1 + last_context_len
+                        ]
+                        dist = dist_i
+                        file_path = file_path_i
+                        file_no = int(chunks[0]) + lineno - 1
+                except:
+                    continue
+
+            ret = ""
+            ret += self.repo.git.show("--stat", f"{ref}")
+            ret += "\n"
+            if self.add_percent < 0.6:
+                ret += f"[IMPORTANT] The relevant code shown by `git_history` is not fully `+` lines.\n"
+                ret += f"[IMPORTANT] This means that the code in question was not added or migrated in this commit.\n"
+                ret += f"[IMPORTANT] Please think step by step and check the abstract below carefully. If error exists in abstract, please ignore the info below.\n"
+            if best_context:
+                ret += f"Because the commit's code change maybe too long, so I generate the abstract of the code change to show you how code changed in this commit.\n"
+                ret += f"Commit shows that the patch code in old version maybe in the file {file_path} around line number {file_no} to {file_no + last_context_len}. The code is below\n"
+                code_snippets = "\n".join(best_context)
+                ret += f"{code_snippets}"
+                ret += f"\nYou can call `viewcode` and `locate_symbol` to find the relevant code based on this information step by step."
+            else:
+                ret += f"This commit shows that there is a high probability that this code is new, so the corresponding code segment cannot be found in the old version.\n"
+                ret += f"You can call `viewcode` and `locate_symbol` to further check the results step by step. For newly introduced code, we consider that this hunk `need not ported`.\n"
             return ret
         except:
             return "Something error, maybe you don't use git_history before or git_history is empty."
@@ -234,7 +290,7 @@ class Project:
         """
         path = re.findall(r"--- a/(.*)", revised_patch)[0]
         revised_patch_line = revised_patch.split("\n")[3:]
-        contexts, num_context = utils.extract_context(revised_patch_line)
+        contexts, num_context, _, _ = utils.extract_context(revised_patch_line)
         lineno = -1
         lines = []
         min_distance = float("inf")

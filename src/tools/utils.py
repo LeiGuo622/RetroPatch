@@ -117,7 +117,7 @@ def find_most_similar_block(
     return best_start_index, min_distance
 
 
-def extract_context(lines: str) -> Tuple[str, int]:
+def extract_context(lines: list) -> Tuple[list, int, list, int]:
     """
     Process the input string by removing certain lines and returning the processed string and the count of processed lines.
 
@@ -128,15 +128,18 @@ def extract_context(lines: str) -> Tuple[str, int]:
         tuple[str, int]: A tuple containing the processed string and the count of processed lines.
     """
     processed_lines = []
+    add_lines = []
     for line in lines:
         if line.startswith(" "):
             processed_lines.append(line[1:])
         elif line.startswith("-"):
             processed_lines.append(line[1:])
+        elif line.startswith("+"):
+            add_lines.append(line[1:])
 
     processed_lines_count = len(processed_lines)
 
-    return processed_lines, processed_lines_count
+    return processed_lines, processed_lines_count, add_lines, len(add_lines)
 
 
 def revise_patch(
@@ -174,7 +177,7 @@ def revise_patch(
         # force_flag: force to revise all mismatched lines, otherwise fix indentation only
         # TODO: if the distance is close, it should be revised
         # XXX: if the distance is far, it should not be revised
-        contexts, num_context = extract_context(tmp_lines)
+        contexts, num_context, _, _ = extract_context(tmp_lines)
         lineno, _ = find_most_similar_block(
             contexts, target_file_lines, num_context, False
         )
