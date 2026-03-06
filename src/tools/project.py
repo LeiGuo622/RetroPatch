@@ -735,7 +735,7 @@ def creat_locate_symbol_tool(project: Project):
             ret += f"The file where this symbol is located is: \n"
             ret += "\n".join([f"{file}:{line}" for file, line in res])
             ret += f"\nPlease be careful to check that this symbol indicates the same thing as the previous symbol.\n"
-            return "Symbol not found"
+            return ret
 
     return locate_symbol
 
