@@ -102,7 +102,14 @@ class Project:
         content = file.data_stream.read().decode("utf-8")
         lines = content.split("\n")
         ret = []
-        endline = min(endline, len(lines))
+        if endline > len(lines):
+            startline -= endline - len(lines)
+            endline = len(lines)
+            ret.append(
+                f"This file only has {len(lines)} lines. Here are lines {startline} through {endline}.\n"
+            )
+        else:
+            ret.append(f"Here are lines {startline} through {endline}.\n")
         for i in range(startline - 1, endline):
             ret.append(lines[i])
         return (
