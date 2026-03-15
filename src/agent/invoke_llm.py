@@ -79,7 +79,7 @@ def do_backport(
                     f"Failed to backport the hunk {idx} \n----------------------------------\n{pp}\n----------------------------------\n"
                 )
                 logger.error(f"Reach max_iterations for hunk {idx}")
-                exit(1)
+                return
 
     project.all_hunks_applied_succeeded = True
     logger.info(f"Aplly all hunks in the patch      PASS")
