@@ -263,13 +263,14 @@ class Project:
                     continue
 
             ret = ""
-            ret += self.repo.git.show("--stat", f"{ref}")
+            stat = self.repo.git.show("--stat", f"{ref}")
+            ret += stat[0 : min(len(stat), 3000)]
             ret += "\n"
             if self.add_percent < 0.6:
                 ret += f"[IMPORTANT] The relevant code shown by `git_history` is not fully `+` lines.\n"
                 ret += f"[IMPORTANT] This means that the code in question was not added or migrated in this commit.\n"
                 ret += f"[IMPORTANT] Please think step by step and check the abstract below carefully. If error exists in abstract, please ignore the info below.\n"
-            if best_context:
+            elif best_context:
                 ret += f"Because the commit's code change maybe too long, so I generate the abstract of the code change to show you how code changed in this commit.\n"
                 ret += f"Commit shows that the patch code in old version maybe in the file {file_path} around line number {file_no} to {file_no + last_context_len}. The code is below\n"
                 code_snippets = "\n".join(best_context)

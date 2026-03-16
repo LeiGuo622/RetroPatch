@@ -25,6 +25,7 @@ You have 5 tools: `viewcode` `locate_symbol` `git_history` `git_show` and `valid
 0. ref: the commit hash of the ref you want to test the patch on.
 1. patch: the patch you want to test. Each line of patch must start with `+`, `-` or ` ` (space) and use tab indentation. If migration is not required, put `need not ported`.
 
+[IMPORTANT] Whenever you use a tool, you MUST give your thoughts and the reason for the call.
 [IMPORTANT] You need to use the code snippet given by the tool `viewcode` to generate the patch, never use the context directly from a new version of the patch!
 
 Example of a patch format:
@@ -69,6 +70,7 @@ below is the patch you need to backport:
 ```diff
 {new_patch}
 ```
+You only need to generate the corresponding patch for this hunk, do not additionally generate the hunks mentioned in other commit messages.
 
 To make it convenient for you to view the patch similar location code, the following will give you the similar code blocks that were matched in older version.
 
