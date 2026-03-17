@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -89,7 +90,7 @@ def do_backport(
     for file in os.listdir(data.patch_dataset_dir):
         if os.path.exists(f"{data.project_dir}{file}"):
             os.remove(f"{data.project_dir}{file}")
-        os.symlink(f"{data.patch_dataset_dir}{file}", f"{data.project_dir}{file}")
+        shutil.copy2(f"{data.patch_dataset_dir}{file}", f"{data.project_dir}{file}")
     project.context_mismatch_times = 0
     validate_ret = project._validate(data.target_release, complete_patch)
     if project.poc_succeeded:

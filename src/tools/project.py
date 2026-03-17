@@ -532,8 +532,27 @@ class Project:
             self.compile_succeeded = True
             return ret
 
+        # build_process = subprocess.Popen(
+        #     ["/bin/bash", "build.sh"],
+        #     stdin=subprocess.DEVNULL,
+        #     stdout=subprocess.PIPE,
+        #     stderr=subprocess.PIPE,
+        #     cwd=self.dir,
+        #     text=True,
+        # )
+        docker_command = [
+            "docker",
+            "run",
+            "-v",
+            f"{self.dir}:{self.dir}",
+            "--rm",
+            "build-kernel-ubuntu-16.04",
+            "/bin/bash",
+            "-c",
+            f"cd {self.dir}; bash build.sh",
+        ]
         build_process = subprocess.Popen(
-            ["/bin/bash", "build.sh"],
+            docker_command,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import sys
+import shutil
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src_dir_path = os.path.join(parent_dir, "src")
@@ -39,7 +40,7 @@ def main():
     for file in os.listdir(data.patch_dataset_dir):
         if os.path.exists(f"{data.project_dir}{file}"):
             os.remove(f"{data.project_dir}{file}")
-        os.symlink(f"{data.patch_dataset_dir}{file}", f"{data.project_dir}{file}")
+        shutil.copy2(f"{data.patch_dataset_dir}{file}", f"{data.project_dir}{file}")
     project = Project(data)
 
     # HACK: call func to test patch here, for example, I call `_validate`
