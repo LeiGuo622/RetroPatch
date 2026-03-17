@@ -109,7 +109,6 @@ def load_yml(file_path: str):
     data.new_patch = rev_parse_commit(data.new_patch, data.project_dir)
     data.target_release = rev_parse_commit(data.target_release, data.project_dir)
     data.new_patch_parent = rev_parse_commit(data.new_patch_parent, data.project_dir)
-    print(data)
 
     return data
 
