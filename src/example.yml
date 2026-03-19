@@ -9,3 +9,13 @@ tag: CVE-2023-3576
 openai_key: 
 project_dir: dataset/libsdl-org/libtiff
 patch_dataset_dir: ~/backports/patch_dataset/libtiff/CVE-2023-3576/
+
+# OpenAI/Azure OpenAI Selection
+# Set use_azure: false (or omit) for regular OpenAI
+# Set use_azure: true for Azure OpenAI
+use_azure: false
+
+# Azure OpenAI Configuration (only needed if use_azure: true)
+# azure_endpoint: "https://your-resource.openai.azure.com/"
+# azure_deployment: "gpt-5"
+# azure_api_version: "2024-12-01-preview"

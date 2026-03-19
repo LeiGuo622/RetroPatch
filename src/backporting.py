@@ -55,6 +55,12 @@ def load_yml(file_path: str):
     data.openai_key = config.get("openai_key")
     data.tag = config.get("tag")
 
+    # Azure OpenAI configuration (optional)
+    data.use_azure = config.get("use_azure", False)
+    data.azure_endpoint = config.get("azure_endpoint", "")
+    data.azure_deployment = config.get("azure_deployment", "gpt-4")
+    data.azure_api_version = config.get("azure_api_version", "2024-12-01-preview")
+
     data.new_patch = config.get("new_patch", "")
     if not data.new_patch or not data.new_patch:
         logger.error(
@@ -145,7 +151,7 @@ def main():
     project.repo.git.clean("-fdx")
     start_time = time.time()
     before_usage = get_usage(data.openai_key)
-    agent_executor, llm = initial_agent(project, data.openai_key, debug_mode)
+    agent_executor, llm = initial_agent(project, data, debug_mode)
     try:
         do_backport(agent_executor, project, data, llm, logfile)
         end_time = time.time()
