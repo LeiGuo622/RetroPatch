@@ -1,0 +1,61 @@
+[MAIN]
+# Minimum Python version to use for version dependent checks
+py-version=3.10
+
+# Files or directories to be skipped
+ignore=CVS,.git,__pycache__,.venv,venv
+
+[MESSAGES CONTROL]
+# Disable specific warnings to maintain compatibility with existing code
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    logging-fstring-interpolation,
+    line-too-long,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    too-few-public-methods,
+    protected-access,
+    redefined-builtin,
+    unused-variable,
+    unused-argument,
+    no-else-continue,
+    no-else-return,
+    f-string-without-interpolation
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=120
+
+# Allow longer lines for comments and docstrings
+ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=10
+
+# Maximum number of locals for function / method body
+max-locals=25
+
+# Maximum number of return / yield for function / method body
+max-returns=6
+
+# Maximum number of branch for function / method body
+max-branches=15
+
+# Maximum number of statements in function / method body
+max-statements=50
+
+[BASIC]
+# Good variable names which should always be accepted
+good-names=i,j,k,ex,Run,_,id,db,pk,logger
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=10
+
+[IMPORTS]
+# Allow wildcard imports from specific modules
+allow-wildcard-with-all=no
