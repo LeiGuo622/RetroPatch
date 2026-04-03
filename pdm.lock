@@ -4,9 +4,11 @@
 [metadata]
 groups = ["default"]
 strategy = ["cross_platform", "inherit_metadata"]
-lock_version = "4.4.2"
-content_hash = "sha256:ae5576c536044a1da28f9c98525d05db33e6876b500dfcc5c1d0de30e2960a46"
+lock_version = "4.5.0"
+content_hash = "sha256:e64434415ba4d3fefdfc762b006d180a44db3ad3557a2acc9357236d4cd41e31"
 
+[[metadata.targets]]
+requires_python = ">=3.10"
 [[package]]
 name = "aiohttp"
 version = "3.9.5"
@@ -437,6 +439,17 @@ groups = ["default"]
 files = [
     {file = "jsonpointer-3.0.0-py2.py3-none-any.whl", hash = "sha256:13e088adc14fca8b6aa8177c044e12701e6ad4b28ff10e65f2267a90109c9942"},
     {file = "jsonpointer-3.0.0.tar.gz", hash = "sha256:2b2d729f2091522d61c3b31f82e11870f60b68f43fbc705cb76bf4b832af59ef"},
+]
+
+[[package]]
+name = "kconfiglib"
+version = "14.1.0"
+requires_python = ">=2.7,!=3.0.*,!=3.1.*"
+summary = "A flexible Python Kconfig implementation"
+groups = ["default"]
+files = [
+    {file = "kconfiglib-14.1.0-py2.py3-none-any.whl", hash = "sha256:edcd35a20e7e138a9a9e96149027f805f785e818d2eae400b6fa8b0c8845114a"},
+    {file = "kconfiglib-14.1.0.tar.gz", hash = "sha256:bed2cc2216f538eca4255a83a4588d8823563cdd50114f86cf1a2674e602c93c"},
 ]
 
 [[package]]
