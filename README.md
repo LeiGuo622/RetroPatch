@@ -1,7 +1,10 @@
 # patch-backporting
 
-## Usage
+## Demo
 
+[![asciicast](https://asciinema.org/a/8J9k0iBJ6IkdDmvr.svg)](https://asciinema.org/a/8J9k0iBJ6IkdDmvr)
+
+## Usage
 
 ```shell
 cd src
