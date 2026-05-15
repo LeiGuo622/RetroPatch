@@ -15,7 +15,7 @@ Your task is to analyze an upstream kernel patch and determine if the vulnerable
 You should answer "NO" (does NOT need backporting) ONLY when you have CLEAR AND CONCLUSIVE evidence that:
 1. The vulnerable code/function/feature NEVER existed in the downstream kernel, OR
 2. The code was removed before the current version, OR
-3. The feature protected by CONFIG options is clearly NOT enabled in any supported architecture
+3. The vulnerable code have been significantly refactored/rewritten or fixed in a different way that makes the patch irrelevant
 
 You should answer "YES" (needs backporting) if:
 1. The vulnerable code EXISTS in the downstream kernel (even if slightly modified), OR
